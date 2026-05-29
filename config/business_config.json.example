@@ -1,0 +1,72 @@
+{
+    "SYSTEM_MAP": {
+        "1": "SISTEMA_A",
+        "2": "SISTEMA_B"
+    },
+    "DEPT_MAP": {
+        "1": "Suporte Técnico",
+        "2": "Comercial",
+        "3": "Financeiro",
+        "4": "Ouvidoria",
+        "5": "Nova Instalação | Migração"
+    },
+    "REASON_MAP": {
+        "1": {
+            "1": "Problema Técnico A",
+            "2": "Ajustes de Configuração",
+            "3": "Dúvidas de Uso",
+            "4": "Arquivos Indisponíveis",
+            "5": "Licenciamento",
+            "6": "Não consta"
+        },
+        "2": {
+            "1": "Falar com um consultor comercial",
+            "2": "Agendar uma demonstração"
+        },
+        "3": {
+            "1": "Boleto",
+            "2": "Nota Fiscal",
+            "3": "Sistema bloqueado",
+            "4": "Mensagem de cobrança",
+            "5": "Não consta"
+        },
+        "4": {
+            "1": "Reclamação",
+            "2": "Sugestão",
+            "3": "Elogio"
+        }
+    },
+    "OCCURRENCE_MAP": {
+        "2": {
+            "1": {
+                "1": "Software A",
+                "2": "Software B",
+                "3": "Software C",
+                "4": "Software D"
+            }
+        }
+    },
+    "LANG_MAP": {
+        "1": "Português",
+        "2": "English",
+        "3": "Español"
+    },
+    "AGENT_GROUPS": {
+        "Suporte Técnico": [
+            "Agente Exemplo A",
+            "Agente Exemplo B",
+            "Agente Exemplo C"
+        ],
+        "Comercial": [
+            "Consultor Exemplo A",
+            "Consultor Exemplo B"
+        ],
+        "Gerência": [
+            "Gestor A",
+            "Gestor B"
+        ],
+        "Financeiro": [
+            "Financeiro A"
+        ]
+    }
+}

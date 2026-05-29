@@ -1,0 +1,11 @@
+reports*
+m_bird*
+*.venv
+*__pycache__
+*.pyc
+test_reports*
+*business_config.json
+*.env
+
+# CocoIndex Code (ccc)
+/.cocoindex_code/
