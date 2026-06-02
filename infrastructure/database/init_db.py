@@ -124,6 +124,16 @@ async def init_database(db_path: str):
     """Initializes the database with the required schema."""
     async with aiosqlite.connect(db_path) as db:
         await db.executescript(SCHEMA)
+        
+        # Migration: ensure new columns exist in conversation_metrics
+        async with db.execute("PRAGMA table_info(conversation_metrics);") as cursor:
+            columns = await cursor.fetchall()
+            column_names = [col[1] for col in columns]
+            if "sla_time_to_first_human" not in column_names and len(column_names) > 0:
+                await db.execute("ALTER TABLE conversation_metrics ADD COLUMN sla_time_to_first_human REAL;")
+            if "ticket_duration_min" not in column_names and len(column_names) > 0:
+                await db.execute("ALTER TABLE conversation_metrics ADD COLUMN ticket_duration_min REAL;")
+                
         await db.commit()
     print(f"Banco de dados inicializado em: {db_path}")
 
