@@ -31,7 +31,8 @@ class TestMetricsCalculator(unittest.TestCase):
     def test_frt_different_days(self):
         start = datetime(2024, 1, 1, 23, 0, 0)
         resp = datetime(2024, 1, 2, 0, 30, 0)
-        self.assertIsNone(MetricsCalculator.calculate_frt(start, resp))
+        # Should now be 90 minutes instead of None
+        self.assertEqual(MetricsCalculator.calculate_frt(start, resp), 90.0)
 
     def test_nps_distribution(self):
         scores = [10, 8, 5]

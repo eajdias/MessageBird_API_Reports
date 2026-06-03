@@ -29,12 +29,12 @@ class MetricsCalculator:
 
     @staticmethod
     def calculate_frt(start_dt: Optional[datetime], first_resp_dt: Optional[datetime]) -> Optional[float]:
-        """Calcula o FRT (First Response Time) em minutos."""
-        if not start_dt or not first_resp_dt or start_dt.date() != first_resp_dt.date():
+        """Calculates FRT (First Response Time) in minutes. No longer restricted to same-day."""
+        if not start_dt or not first_resp_dt or start_dt >= first_resp_dt:
             return None
-        
+
         delta = (first_resp_dt - start_dt).total_seconds() / 60
-        return round(delta, 2) if delta > 0 else 0.0
+        return round(delta, 2)
 
     @staticmethod
     def calculate_average(values: List[float]) -> Optional[float]:

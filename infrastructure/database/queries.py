@@ -43,25 +43,12 @@ SURVEY_DATA_METADATA_QUERY = """
         m.msgs_id,
         m.msgs_created,
         m.msgs_direction,
-        m.msgs_agnt,
-        qt.queue_time
+        m.msgs_agnt
     FROM messages m
     JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
     LEFT JOIN agents ca ON cv.cnvs_agnt = ca.agnt_id
     LEFT JOIN agents ma ON m.msgs_agnt = ma.agnt_id
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
-    LEFT JOIN (
-        SELECT m2.msgs_cnvs, MAX(m2.msgs_created) as queue_time
-        FROM messages m2
-        JOIN (
-            SELECT msgs_cnvs, MIN(msgs_created) as first_agent_msg
-            FROM messages
-            WHERE msgs_agnt IS NOT NULL AND msgs_direction = 'sent'
-            GROUP BY msgs_cnvs
-        ) fa ON fa.msgs_cnvs = m2.msgs_cnvs
-        WHERE m2.msgs_direction = 'received' AND m2.msgs_created <= fa.first_agent_msg
-        GROUP BY m2.msgs_cnvs
-    ) qt ON qt.msgs_cnvs = cv.cnvs_id
     WHERE (datetime(cv.cnvs_created) BETWEEN ? AND ?)
        OR (datetime(cv.cnvs_updated) BETWEEN ? AND ?)
     ORDER BY cv.cnvs_id, m.msgs_created ASC
@@ -107,8 +94,7 @@ SELECT
     ct.cnts_custom2,
     ct.cnts_custom3,
     ct.cnts_custom4,
-    a.agnt_name,
-    ROUND((julianday(c.cnvs_updated) - julianday(c.cnvs_created)) * 1440) as calc_duration_min
+    a.agnt_name
 FROM conversations c
 LEFT JOIN contacts ct ON ct.cnts_id = c.cnvs_cnts
 LEFT JOIN agents a ON a.agnt_id = c.cnvs_agnt
@@ -149,25 +135,12 @@ SURVEY_DATA_METADATA_QUERY_ALL = """
         m.msgs_id,
         m.msgs_created,
         m.msgs_direction,
-        m.msgs_agnt,
-        qt.queue_time
+        m.msgs_agnt
     FROM messages m
     JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
     LEFT JOIN agents ca ON cv.cnvs_agnt = ca.agnt_id
     LEFT JOIN agents ma ON m.msgs_agnt = ma.agnt_id
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
-    LEFT JOIN (
-        SELECT m2.msgs_cnvs, MAX(m2.msgs_created) as queue_time
-        FROM messages m2
-        JOIN (
-            SELECT msgs_cnvs, MIN(msgs_created) as first_agent_msg
-            FROM messages
-            WHERE msgs_agnt IS NOT NULL AND msgs_direction = 'sent'
-            GROUP BY msgs_cnvs
-        ) fa ON fa.msgs_cnvs = m2.msgs_cnvs
-        WHERE m2.msgs_direction = 'received' AND m2.msgs_created <= fa.first_agent_msg
-        GROUP BY m2.msgs_cnvs
-    ) qt ON qt.msgs_cnvs = cv.cnvs_id
     ORDER BY cv.cnvs_id, m.msgs_created ASC
 """
 
@@ -194,12 +167,10 @@ SELECT
     ct.cnts_custom2,
     ct.cnts_custom3,
     ct.cnts_custom4,
-    a.agnt_name,
-    cm.ticket_duration_min as calc_duration_min
+    a.agnt_name
 FROM conversations c
 LEFT JOIN contacts ct ON ct.cnts_id = c.cnvs_cnts
 LEFT JOIN agents a ON a.agnt_id = c.cnvs_agnt
-LEFT JOIN conversation_metrics cm ON cm.metr_cnvs = c.cnvs_id
 ORDER BY c.cnvs_created
 """
 

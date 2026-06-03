@@ -283,39 +283,6 @@ class SyncManager:
                 break
             offset += len(items)
 
-        # Update lifecycle columns from conversations data
-        logger.info("Updating contact lifecycle columns...")
-        await conn.execute_query(
-            """
-            UPDATE contacts SET
-                cnts_first_contact_at = (
-                    SELECT MIN(cnvs_created) FROM conversations WHERE cnvs_cnts = cnts_id
-                ),
-                cnts_last_contact_at = (
-                    SELECT MAX(cnvs_updated) FROM conversations WHERE cnvs_cnts = cnts_id
-                ),
-                cnts_interaction_count = (
-                    SELECT COUNT(*) FROM conversations WHERE cnvs_cnts = cnts_id
-                ),
-                cnts_churn_score = CASE
-                    WHEN (
-                        julianday('now') - julianday(
-                            (SELECT MAX(cnvs_updated) FROM conversations WHERE cnvs_cnts = cnts_id)
-                        )
-                    ) > 60 THEN 1.0
-                    WHEN (
-                        julianday('now') - julianday(
-                            (SELECT MAX(cnvs_updated) FROM conversations WHERE cnvs_cnts = cnts_id)
-                        )
-                    ) > 30 THEN 0.5
-                    ELSE 0.0
-                END
-            WHERE cnts_id IN (
-                SELECT DISTINCT cnvs_cnts FROM conversations WHERE cnvs_cnts IS NOT NULL
-            )
-            """
-        )
-
         await self.update_sync_state(conn, "contacts")
         print()  # Newline after progress bar
         logger.info(f"Contacts sync completed. Total: {processed_count}")
@@ -899,127 +866,10 @@ class SyncManager:
             #     f"  ...processed {min(i + chunk_size, total)}/{total} convs ({msg_count} msgs)"
             # )
 
-        # Update aggregated stats
-        await self.update_agent_statistics(conn)
-        await self.recalculate_metrics(conn)
-
         print()  # Newline
         logger.info(
             f"All messages sync completed. {total} conversations, {msg_count} messages."
         )
-
-    async def recalculate_metrics(self, conn, cnvs_ids=None):
-        """Recalculate FRT, ART, and resolution time for conversations using Python logic."""
-        logger.info("Recalculating conversation metrics using Python logic...")
-        from domain.logic import calculate_time_to_first_human, calculate_ticket_duration
-
-        if cnvs_ids:
-            placeholders = ",".join(["?"] * len(cnvs_ids))
-            query_conv = f"SELECT cnvs_id, cnvs_created, cnvs_updated, cnvs_last, cnvs_status FROM conversations WHERE cnvs_id IN ({placeholders})"
-            query_msg = f"""
-                SELECT m.msgs_cnvs, m.msgs_direction, m.msgs_created, a.agnt_name
-                FROM messages m
-                LEFT JOIN agents a ON m.msgs_agnt = a.agnt_id
-                WHERE m.msgs_cnvs IN ({placeholders})
-                ORDER BY m.msgs_cnvs, m.msgs_created ASC
-            """
-            params = cnvs_ids
-        else:
-            query_conv = "SELECT cnvs_id, cnvs_created, cnvs_updated, cnvs_last, cnvs_status FROM conversations"
-            query_msg = """
-                SELECT m.msgs_cnvs, m.msgs_direction, m.msgs_created, a.agnt_name
-                FROM messages m
-                LEFT JOIN agents a ON m.msgs_agnt = a.agnt_id
-                ORDER BY m.msgs_cnvs, m.msgs_created ASC
-            """
-            params = []
-
-        conv_rows = await conn.fetch_all(query_conv, params)
-        msg_rows = await conn.fetch_all(query_msg, params)
-
-        # Group messages
-        msgs_by_conv = {}
-        for row in msg_rows:
-            cid = row["msgs_cnvs"]
-            if cid not in msgs_by_conv:
-                msgs_by_conv[cid] = []
-            msgs_by_conv[cid].append(dict(row))
-
-        metrics_data = []
-        for conv in conv_rows:
-            cid = conv["cnvs_id"]
-            msgs = msgs_by_conv.get(cid, [])
-            
-            from domain.logic import calculate_time_to_first_human, calculate_ticket_duration
-
-            # Calculate for this conversation
-            sla_first_human = calculate_time_to_first_human(msgs)
-            ticket_duration = calculate_ticket_duration(conv["cnvs_created"], conv["cnvs_last"])
-
-            metrics_data.append((cid, sla_first_human, ticket_duration))
-
-        if metrics_data:
-            async with conn.transaction():
-                await conn.execute_many(
-                    """
-                    INSERT INTO conversation_metrics (metr_cnvs, sla_time_to_first_human, ticket_duration_min)
-                    VALUES (?, ?, ?)
-                    ON CONFLICT(metr_cnvs) DO UPDATE SET
-                        sla_time_to_first_human = excluded.sla_time_to_first_human,
-                        ticket_duration_min = excluded.ticket_duration_min
-                    """,
-                    metrics_data
-                )
-
-        logger.info(f"Recalculated metrics for {len(metrics_data)} conversations.")
-
-    async def update_agent_statistics(self, conn):
-        """Update aggregated statistics for all agents."""
-        logger.info("Updating agent statistics...")
-
-        async with conn.transaction():
-            # 1. Update Message Counts
-            await conn.execute_query(
-                """
-                UPDATE agents
-                SET agnt_msgs = (
-                    SELECT COUNT(*) 
-                    FROM messages 
-                    WHERE msgs_agnt = agents.agnt_id 
-                    AND msgs_direction = 'sent'
-                )
-                WHERE agnt_id IN (SELECT DISTINCT msgs_agnt FROM messages)
-                """
-            )
-
-            # 2. Update Conversation Counts
-            await conn.execute_query(
-                """
-                UPDATE agents
-                SET agnt_cnvs = (
-                    SELECT COUNT(*) 
-                    FROM conversations 
-                    WHERE cnvs_agnt = agents.agnt_id
-                )
-                WHERE agnt_id IN (SELECT DISTINCT cnvs_agnt FROM conversations)
-                """
-            )
-
-            # 3. Update Last Active Time
-            await conn.execute_query(
-                """
-                UPDATE agents
-                SET agnt_last_active = (
-                    SELECT MAX(msgs_created) 
-                    FROM messages 
-                    WHERE msgs_agnt = agents.agnt_id 
-                    AND msgs_direction = 'sent'
-                )
-                WHERE agnt_id IN (SELECT DISTINCT msgs_agnt FROM messages)
-                """
-            )
-
-        logger.info("Agent statistics updated.")
 
     async def sync_messages_for_recent(self, conn, days: int = 30):
         """Sync messages only for conversations updated in the last N days."""
@@ -1056,9 +906,6 @@ class SyncManager:
             results = await asyncio.gather(*chunk)
             msg_count += sum(results)
             logger.info(f"  ...processed {min(i + chunk_size, total)}/{total} convs")
-
-        await self.update_agent_statistics(conn)
-        await self.recalculate_metrics(conn)
 
         logger.info(
             f"Recent messages sync completed. {total} conversations, {msg_count} messages."

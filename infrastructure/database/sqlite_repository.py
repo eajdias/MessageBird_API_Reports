@@ -40,7 +40,7 @@ class SqliteReportRepository(ReportRepository):
                     phone=r["cnts_phone"] or "",
                     start_time=logic.format_local_dt(r["cnvs_created"]),
                     end_time=logic.format_local_dt(r["cnvs_updated"]),
-                    queue_time=r["queue_time"],
+                    queue_time=logic.get_effective_start_time(raw_msgs, r["cnvs_created"]),
                     raw_created=r["cnvs_created"],
                     raw_updated=r["cnvs_updated"],
                     msgs=raw_msgs,
@@ -56,6 +56,8 @@ class SqliteReportRepository(ReportRepository):
                 )
             else:
                 conversations[cid].msgs.append(RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name))
+                # Update queue_time as more messages are added
+                conversations[cid].queue_time = logic.get_effective_start_time(conversations[cid].msgs, conversations[cid].raw_created)
 
         return list(conversations.values())
 
@@ -137,7 +139,7 @@ class SqliteReportRepository(ReportRepository):
                     phone=r["cnts_phone"] or "",
                     start_time=logic.format_local_dt(r["cnvs_created"]),
                     end_time=logic.format_local_dt(r["cnvs_updated"]),
-                    queue_time=r["queue_time"],
+                    queue_time=logic.get_effective_start_time(raw_msgs, r["cnvs_created"]),
                     raw_created=r["cnvs_created"],
                     raw_updated=r["cnvs_updated"],
                     msgs=raw_msgs,
@@ -153,6 +155,8 @@ class SqliteReportRepository(ReportRepository):
                 )
             else:
                 conversations[cid].msgs.append(RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name))
+                # Update queue_time as more messages are added
+                conversations[cid].queue_time = logic.get_effective_start_time(conversations[cid].msgs, conversations[cid].raw_created)
 
         return list(conversations.values())
 

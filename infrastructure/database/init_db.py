@@ -16,11 +16,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     cnts_custom1 TEXT,
     cnts_custom2 TEXT,
     cnts_custom3 TEXT,
-    cnts_custom4 TEXT,
-    cnts_first_contact_at DATETIME,
-    cnts_last_contact_at DATETIME,
-    cnts_interaction_count INTEGER DEFAULT 0,
-    cnts_churn_score REAL DEFAULT 0.0
+    cnts_custom4 TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_contacts_bird ON contacts(cnts_bird);
 CREATE INDEX IF NOT EXISTS idx_contacts_phone ON contacts(cnts_phone);
@@ -30,10 +26,7 @@ CREATE TABLE IF NOT EXISTS agents (
     agnt_name TEXT,
     agnt_bird TEXT UNIQUE NOT NULL,
     agnt_created DATETIME DEFAULT CURRENT_TIMESTAMP,
-    agnt_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-    agnt_cnvs INTEGER DEFAULT 0,
-    agnt_msgs INTEGER DEFAULT 0,
-    agnt_last_active DATETIME
+    agnt_updated DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_agents_bird ON agents(agnt_bird);
 
@@ -111,29 +104,12 @@ CREATE TABLE IF NOT EXISTS sync_errors (
     err_resolved_at DATETIME
 );
 
-CREATE TABLE IF NOT EXISTS conversation_metrics (
-    metr_cnvs INTEGER PRIMARY KEY,
-    sla_time_to_first_human REAL,
-    ticket_duration_min REAL,
-    FOREIGN KEY (metr_cnvs) REFERENCES conversations(cnvs_id)
-);
-
 """
 
 async def init_database(db_path: str):
     """Initializes the database with the required schema."""
     async with aiosqlite.connect(db_path) as db:
         await db.executescript(SCHEMA)
-        
-        # Migration: ensure new columns exist in conversation_metrics
-        async with db.execute("PRAGMA table_info(conversation_metrics);") as cursor:
-            columns = await cursor.fetchall()
-            column_names = [col[1] for col in columns]
-            if "sla_time_to_first_human" not in column_names and len(column_names) > 0:
-                await db.execute("ALTER TABLE conversation_metrics ADD COLUMN sla_time_to_first_human REAL;")
-            if "ticket_duration_min" not in column_names and len(column_names) > 0:
-                await db.execute("ALTER TABLE conversation_metrics ADD COLUMN ticket_duration_min REAL;")
-                
         await db.commit()
     print(f"Banco de dados inicializado em: {db_path}")
 

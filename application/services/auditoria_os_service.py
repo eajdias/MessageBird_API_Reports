@@ -22,6 +22,9 @@ class AuditoriaOSService:
             contact_reason = constants.resolve_reason(r["cnvs_dept"], r["cnvs_contact_reason"])
             occurrence = constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"])
 
+            # Centralized duration calculation
+            duration = logic.calculate_ticket_duration(r["cnvs_created"], r["cnvs_updated"])
+
             data_list.append([
                 r["cnvs_bird"],
                 created,
@@ -39,7 +42,7 @@ class AuditoriaOSService:
                 r["cnvs_rating_nps"] if r["cnvs_rating_nps"] is not None else "",
                 r["cnvs_reopened_count"] or 0,
                 r["cnvs_description"] or "",
-                r["calc_duration_min"] if r["calc_duration_min"] is not None else "N/D",
+                duration if duration > 0 else "N/D",
                 r["cnvs_id"]
             ])
 
@@ -60,6 +63,9 @@ class AuditoriaOSService:
             contact_reason = constants.resolve_reason(r["cnvs_dept"], r["cnvs_contact_reason"])
             occurrence = constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"])
 
+            # Centralized duration calculation
+            duration = logic.calculate_ticket_duration(r["cnvs_created"], r["cnvs_updated"])
+
             data_list.append([
                 r["cnvs_bird"],
                 created,
@@ -77,7 +83,7 @@ class AuditoriaOSService:
                 r["cnvs_rating_nps"] if r["cnvs_rating_nps"] is not None else "",
                 r["cnvs_reopened_count"] or 0,
                 r["cnvs_description"] or "",
-                r["calc_duration_min"] if r["calc_duration_min"] is not None else "N/D",
+                duration if duration > 0 else "N/D",
                 r["cnvs_id"]
             ])
 
