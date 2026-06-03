@@ -23,7 +23,7 @@ class AuditoriaOSService:
             occurrence = constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"])
 
             data_list.append([
-                r["cnvs_id"],
+                r["cnvs_bird"],
                 created,
                 agnt_name,
                 grp,
@@ -39,7 +39,8 @@ class AuditoriaOSService:
                 r["cnvs_rating_nps"] if r["cnvs_rating_nps"] is not None else "",
                 r["cnvs_reopened_count"] or 0,
                 r["cnvs_description"] or "",
-                r["calc_duration_min"] if r["calc_duration_min"] is not None else "N/D"
+                r["calc_duration_min"] if r["calc_duration_min"] is not None else "N/D",
+                r["cnvs_id"]
             ])
 
         return constants.OS_HEADER, data_list
@@ -60,7 +61,7 @@ class AuditoriaOSService:
             occurrence = constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"])
 
             data_list.append([
-                r["cnvs_id"],
+                r["cnvs_bird"],
                 created,
                 agnt_name,
                 grp,
@@ -76,7 +77,8 @@ class AuditoriaOSService:
                 r["cnvs_rating_nps"] if r["cnvs_rating_nps"] is not None else "",
                 r["cnvs_reopened_count"] or 0,
                 r["cnvs_description"] or "",
-                r["calc_duration_min"] if r["calc_duration_min"] is not None else "N/D"
+                r["calc_duration_min"] if r["calc_duration_min"] is not None else "N/D",
+                r["cnvs_id"]
             ])
 
         return constants.OS_HEADER, data_list

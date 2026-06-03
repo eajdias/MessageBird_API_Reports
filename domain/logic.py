@@ -112,6 +112,12 @@ def calculate_ticket_duration(created_at: str, updated_at: str) -> float:
     c_dt = parse_datetime(created_at, apply_offset=True)
     u_dt = parse_datetime(updated_at, apply_offset=True)
     if c_dt and u_dt:
-        return (u_dt - c_dt).total_seconds() / 60
+        if c_dt >= u_dt or c_dt.date() != u_dt.date():
+            return 0.0
+        delta = (u_dt - c_dt).total_seconds() / 60.0
+        from domain.constants import MAX_DURATION_MINUTES
+        if delta > MAX_DURATION_MINUTES:
+            return 0.0
+        return delta
     return 0.0
 

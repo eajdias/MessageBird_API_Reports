@@ -8,9 +8,13 @@ from rich.console import Console
 logger = logging.getLogger("standalone.pdf_exporter")
 console = Console()
 
-_HEADER_COLOR = (26, 58, 92)
-_SECTION_COLOR = (220, 230, 241)
-_LABEL_COLOR = (240, 240, 240)
+_HEADER_COLOR = (26, 58, 92)      # Dark Blue MessageBird style
+_SECTION_COLOR = (235, 240, 245)  # Very light blue for section headers
+_LABEL_COLOR = (245, 245, 245)    # Light gray for labels
+_BRAND_COLOR = (0, 102, 204)      # Primary Brand Blue
+_SUCCESS_COLOR = (34, 139, 34)    # Green for promoters
+_DANGER_COLOR = (220, 53, 69)     # Red for detractors/complaints
+_DANGER_BG = (255, 230, 230)      # Light red background
 
 _EMOJI_PATTERN = re.compile(
     "["
@@ -38,50 +42,89 @@ class _OSPDF(FPDF):
     def header(self):
         self.set_fill_color(*_HEADER_COLOR)
         self.set_text_color(255, 255, 255)
-        self.set_font("Helvetica", "B", 12)
-        self.cell(0, 10, "ORDEM DE SERVIÇO DE ASSISTÊNCIA TÉCNICA DE SOFTWARE",
+        self.set_font("Helvetica", "B", 14)
+        self.cell(0, 12, " ORDEM DE SERVIÇO - ASSISTÊNCIA TÉCNICA",
                   align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
         self.set_text_color(0, 0, 0)
-        self.ln(2)
+        self.ln(4)
 
     def footer(self):
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
-        self.set_text_color(128, 128, 128)
+        self.set_text_color(150, 150, 150)
         self.cell(0, 10, f"Página {self.page_no()}/{{nb}}", align="C")
+        self.set_text_color(0, 0, 0)
 
     def _section(self, title: str):
         self.set_fill_color(*_SECTION_COLOR)
+        self.set_text_color(*_HEADER_COLOR)
+        self.set_font("Helvetica", "B", 10)
+        self.cell(0, 7, f"  {_sanitize(title).upper()}", fill=True, border="B", new_x="LMARGIN", new_y="NEXT")
+        self.set_text_color(0, 0, 0)
+        self.ln(2)
+
+    def _row(self, label: str, value: str, label_w: float = 45, val_color=None, bg_color=None):
+        self.set_fill_color(*_LABEL_COLOR)
         self.set_font("Helvetica", "B", 9)
-        self.cell(0, 6, f"  {_sanitize(title)}", fill=True, new_x="LMARGIN", new_y="NEXT")
-        self.ln(1)
-
-    def _row(self, label: str, value: str, label_w: float = 45):
-        self.set_fill_color(*_LABEL_COLOR)
-        self.set_font("Helvetica", "B", 8)
-        self.cell(label_w, 6, f" {_sanitize(label)}", fill=True, border=1)
-        self.set_font("Helvetica", "", 8)
-        self.multi_cell(self.epw - label_w, 6, f" {_sanitize(value)}", border=1,
+        self.cell(label_w, 7, f" {_sanitize(label)}", fill=True, border="B")
+        
+        self.set_font("Helvetica", "", 9)
+        if val_color: self.set_text_color(*val_color)
+        if bg_color: self.set_fill_color(*bg_color)
+        
+        fill = True if bg_color else False
+        self.multi_cell(self.epw - label_w, 7, f" {_sanitize(value)}", border="B", fill=fill,
                         new_x="LMARGIN", new_y="NEXT")
+        self.set_text_color(0, 0, 0)
 
-    def _two_cols(self, l1: str, v1: str, l2: str, v2: str, label_w: float = 45):
+    def _two_cols(self, l1: str, v1: str, l2: str, v2: str, label_w: float = 45, v1_color=None, v2_color=None):
         half = self.epw / 2
+        
+        # Col 1
         self.set_fill_color(*_LABEL_COLOR)
-        self.set_font("Helvetica", "B", 8)
-        self.cell(label_w, 6, f" {_sanitize(l1)}", fill=True, border=1)
-        self.set_font("Helvetica", "", 8)
-        self.cell(half - label_w, 6, f" {_sanitize(v1)}", border=1)
+        self.set_font("Helvetica", "B", 9)
+        self.cell(label_w, 7, f" {_sanitize(l1)}", fill=True, border="B")
+        
+        self.set_font("Helvetica", "", 9)
+        if v1_color: self.set_text_color(*v1_color)
+        self.cell(half - label_w, 7, f" {_sanitize(v1)}", border="B")
+        self.set_text_color(0, 0, 0)
+        
+        # Col 2
         self.set_fill_color(*_LABEL_COLOR)
-        self.set_font("Helvetica", "B", 8)
-        self.cell(label_w, 6, f" {_sanitize(l2)}", fill=True, border=1)
-        self.set_font("Helvetica", "", 8)
-        self.cell(self.epw - 2 * label_w - (half - label_w), 6, f" {_sanitize(v2)}",
-                  border=1, new_x="LMARGIN", new_y="NEXT")
+        self.set_font("Helvetica", "B", 9)
+        self.cell(label_w, 7, f" {_sanitize(l2)}", fill=True, border="B")
+        
+        self.set_font("Helvetica", "", 9)
+        if v2_color: self.set_text_color(*v2_color)
+        self.cell(self.epw - 2 * label_w - (half - label_w), 7, f" {_sanitize(v2)}",
+                  border="B", new_x="LMARGIN", new_y="NEXT")
+        self.set_text_color(0, 0, 0)
+
+    def _protocol_header(self, protocolo: str):
+        self.set_fill_color(*_BRAND_COLOR)
+        self.set_text_color(255, 255, 255)
+        self.set_font("Helvetica", "B", 10)
+        self.cell(40, 8, " ID DA OS: ", fill=True)
+        
+        self.set_fill_color(240, 248, 255) # Light brand blue
+        self.set_text_color(*_HEADER_COLOR)
+        self.set_font("Helvetica", "B", 12)
+        self.cell(0, 8, f"  {_sanitize(protocolo)}", fill=True, new_x="LMARGIN", new_y="NEXT")
+        self.set_text_color(0, 0, 0)
+        self.ln(4)
+
 
 class PDFExporter:
     def export_os_pdfs(self, output_dir: str, header: List[str], data: List[List[Any]]):
         os.makedirs(output_dir, exist_ok=True)
         generated = 0
+
+        def _val(v):
+            v = str(v).strip()
+            if not v or v.lower() in ("none", "nan", "n/d", ""):
+                return "N/A"
+            return v
 
         for row in data:
             try:
@@ -96,68 +139,74 @@ class PDFExporter:
                 pdf.set_auto_page_break(auto=True, margin=15)
                 pdf.add_page()
 
-                pdf.set_fill_color(*_LABEL_COLOR)
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(35, 7, " PROTOCOLO No:", fill=True, border=1)
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 7, f"  {_sanitize(protocolo)}", border=1, new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(2)
+                # 1. Protocolo Destacado
+                pdf._protocol_header(protocolo)
 
-                pdf._section("DADOS DO CLIENTE")
-                pdf._row("Cliente:", str(row[4]))
-                pdf._two_cols("E-mail:", str(row[6]), "Telefone:", str(row[5]))
-                pdf._two_cols("Documento:", str(row[7]), "ID BD:", protocolo)
-                pdf.ln(2)
+                # 2. Dados do Cliente
+                pdf._section("Dados do Cliente")
+                pdf._row("Cliente:", _val(row[4]))
+                pdf._two_cols("E-mail:", _val(row[6]), "Telefone:", _val(row[5]))
+                # ID BD is row[17] (cnvs_id), Documento is row[7]
+                pdf._two_cols("Documento:", _val(row[7]), "ID BD:", _val(row[17]))
+                pdf.ln(4)
 
-                pdf._section("EQUIPAMENTO OU SISTEMA")
-                pdf._two_cols("Sistema:", str(row[8]), "Produto:", str(row[8]))
-                pdf.ln(2)
+                # 3. Equipamento ou Sistema
+                pdf._section("Equipamento / Sistema")
+                sistema = _val(row[8])
+                # Redundancy fix: if we only have one field for system/product, 
+                # keep product as N/A to avoid repeating the same value.
+                produto = "N/A"
+                pdf._two_cols("Sistema:", sistema, "Produto:", produto)
+                pdf.ln(4)
 
-                pdf._section("DETALHAMENTO DOS DEFEITOS")
-                pdf._two_cols("Motivo:", str(row[10]), "Ocorrência:", str(row[11]))
+                # 4. Detalhamento dos Defeitos
+                pdf._section("Detalhamento do Atendimento")
+                pdf._two_cols("Motivo:", _val(row[10]), "Ocorrência:", _val(row[11]))
 
                 desc = str(row[15])
-                if len(desc) > 500: desc = desc[:497] + "..."
-                pdf._row("Descrição:", desc)
-
-                lw = 45
-                half = pdf.epw / 2
+                if not desc.strip(): desc = "Sem descrição detalhada."
+                if len(desc) > 800: desc = desc[:797] + "..."
+                
+                pdf.set_font("Helvetica", "B", 9)
                 pdf.set_fill_color(*_LABEL_COLOR)
-                pdf.set_font("Helvetica", "B", 8)
-                pdf.cell(lw, 6, " Reclamação?", fill=True, border=1)
-                pdf.set_font("Helvetica", "", 8)
+                pdf.cell(0, 7, " Descrição relatada:", fill=True, new_x="LMARGIN", new_y="NEXT")
+                pdf.set_font("Helvetica", "", 9)
+                pdf.multi_cell(0, 6, f"{_sanitize(desc)}", border="B", new_x="LMARGIN", new_y="NEXT")
+                pdf.ln(4)
+
+                # Reclamação com Alerta Visual
                 reclamacao = "SIM" if int(row[14] or 0) > 0 else "NÃO"
-                pdf.cell(half - lw, 6, f" {_sanitize(reclamacao)}", border=1)
+                rec_bg = _DANGER_BG if reclamacao == "SIM" else None
+                rec_color = _DANGER_COLOR if reclamacao == "SIM" else None
+                
+                pdf._row("Houve Reclamação?", reclamacao, val_color=rec_color, bg_color=rec_bg)
+                pdf._row("Retornante no mês?", "N/A")
+                pdf.ln(4)
 
-                pdf.set_fill_color(*_LABEL_COLOR)
-                pdf.set_font("Helvetica", "B", 8)
-                pdf.cell(lw, 6, " Retornante no mês?", fill=True, border=1)
-                pdf.set_font("Helvetica", "", 8)
-                pdf.cell(pdf.epw - 2 * lw - (half - lw), 6, " N/A", border=1,
-                         new_x="LMARGIN", new_y="NEXT")
-                pdf.ln(2)
-
-                pdf._section("MÉTRICAS DE ATENDIMENTO (NPS)")
-                pdf._two_cols("Nota do Técnico:", str(row[12]), "Nota NPS:", str(row[13]))
-                pdf.ln(2)
-
-                pdf._section("ANÁLISE DO RELATÓRIO (GP/GQ)")
-                pdf._row("Agente:", str(row[2]))
-                pdf._row("Departamento:", str(row[9]))
-                pdf._two_cols("Data Início:", str(row[1]), "Duração:", str(row[16]))
-
-                pdf.set_fill_color(*_LABEL_COLOR)
-                pdf.set_font("Helvetica", "B", 8)
-                pdf.cell(lw, 6, " Abrir Ação Corretiva:", fill=True, border=1)
-                pdf.set_font("Helvetica", "", 8)
-                acao = "NÃO"
-                pdf.cell(pdf.epw - lw, 6, f" {_sanitize(acao)}", border=1,
-                         new_x="LMARGIN", new_y="NEXT")
+                # 5. Métricas e Análise
+                pdf._section("Métricas e Análise (GP/GQ)")
+                
+                # Formatação Condicional NPS
+                nps_val = _val(row[13])
+                nps_color = None
+                try:
+                    nps_int = int(nps_val)
+                    if nps_int >= 9:
+                        nps_color = _SUCCESS_COLOR
+                    elif nps_int <= 6:
+                        nps_color = _DANGER_COLOR
+                except:
+                    pass
+                
+                pdf._two_cols("Nota do Técnico:", _val(row[12]), "Nota NPS:", nps_val, v2_color=nps_color)
+                pdf._two_cols("Agente:", _val(row[2]), "Departamento:", _val(row[9]))
+                pdf._two_cols("Data Início:", _val(row[1]), "Duração (min):", _val(row[16]))
+                pdf._row("Abrir Ação Corretiva:", "NÃO")
 
                 pdf.output(pdf_path)
                 generated += 1
-            except Exception as e:
-                logger.error(f"Erro ao gerar PDF para OS {row[0]}: {e}")
 
-        console.print(f"  [green]Ordens de Serviço geradas:[/] {generated} arquivo(s) em {output_dir}")
-        return generated
+            except Exception as e:
+                logger.error(f"Failed to generate PDF for row {row}: {e}")
+
+        logger.info(f"Generated {generated} OS PDFs in {output_dir}")

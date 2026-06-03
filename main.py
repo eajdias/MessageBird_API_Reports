@@ -3,6 +3,7 @@ import argparse
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+load_dotenv("config/.env")
 
 from infrastructure.config_loader import load_and_configure_business
 from infrastructure.database.connection import DatabaseConnection
@@ -14,8 +15,6 @@ from domain import constants
 from presentation import terminal
 
 async def main():
-    load_dotenv("config/.env")
-    
     parser = argparse.ArgumentParser(description="Standalone Report & Sync Tool")
     subparsers = parser.add_subparsers(dest="command", help="Comandos disponíveis")
     

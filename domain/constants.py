@@ -103,7 +103,7 @@ DEMAND_HEADER = [
 ]
 
 OS_HEADER = [
-    "Protocolo",
+    "ID Bird",
     "Data de Início",
     "Agente",
     "Grupo",
@@ -119,7 +119,8 @@ OS_HEADER = [
     "Nota NPS",
     "Reaberturas",
     "Descrição do Problema",
-    "Duração (min)"
+    "Duração (min)",
+    "ID BD"
 ]
 
 # ── Annual report headers ─────────────────────────────────────────────────────

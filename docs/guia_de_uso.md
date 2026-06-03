@@ -75,14 +75,14 @@ A geração de relatórios lê os dados do SQLite e constrói a estrutura de pas
 ### A) Relatório Mensal Global
 Gera o relatório do mês especificado para **todos os setores** cadastrados no `business_config.json`.
 ```bash
-# Gera o relatório de Fevereiro de 2024
-make report YEAR=2024 MONTH=2
+# Gera o relatório de Janeiro de 2025
+make report YEAR=2025 MONTH=1
 ```
 
 ### B) Relatório Mensal Específico por Setor (Ágil)
 Se você precisa enviar com urgência o relatório apenas para a gerência de Suporte, pode filtrar a extração, economizando tempo de processamento.
 ```bash
-make report YEAR=2024 MONTH=2 SECTOR="Suporte Técnico"
+make report YEAR=2026 MONTH=1 SECTOR="Suporte Técnico"
 ```
 *(Nota: O nome do Setor deve ser idêntico ao grupo cadastrado em `business_config.json` ou `constants.py`).*
 

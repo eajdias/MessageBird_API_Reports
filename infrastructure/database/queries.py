@@ -195,10 +195,11 @@ SELECT
     ct.cnts_custom3,
     ct.cnts_custom4,
     a.agnt_name,
-    ROUND((julianday(c.cnvs_updated) - julianday(c.cnvs_created)) * 1440) as calc_duration_min
+    cm.ticket_duration_min as calc_duration_min
 FROM conversations c
 LEFT JOIN contacts ct ON ct.cnts_id = c.cnvs_cnts
 LEFT JOIN agents a ON a.agnt_id = c.cnvs_agnt
+LEFT JOIN conversation_metrics cm ON cm.metr_cnvs = c.cnvs_id
 ORDER BY c.cnvs_created
 """
 

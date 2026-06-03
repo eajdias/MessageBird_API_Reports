@@ -6,6 +6,7 @@ from .config import (
     PHRASE_TRIAGEM_HEADER,
     PHRASE_TICKET_HEADER,
     SOFTWARE_NAMES,
+    DEFAULT_SOFTWARE,
 )
 import logging
 import asyncio
@@ -1148,6 +1149,9 @@ class SyncManager:
                                 updates["cnvs_software"] = name
                                 found = True
                                 break
+                        if not found:
+                            updates["cnvs_software"] = DEFAULT_SOFTWARE
+                            found = True
                     else:
                         m = re.search(r"(\d+)", resp)
                         num = int(m.group(1)) if m else None

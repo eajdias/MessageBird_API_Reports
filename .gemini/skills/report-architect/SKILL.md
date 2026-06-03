@@ -32,3 +32,4 @@ Esta skill foca na excelência visual e estrutural dos relatórios gerados pelo 
 ## Pitfalls e Shields
 - **DRY**: Não duplique lógica de formatação. Centralize estilos comuns em métodos privados no `ExcelExporter`.
 - **YAGNI**: Não crie abas de dados de apoio que não serão utilizadas por gráficos ou auditoria real.
+- **Created vs Resolved**: O dashboard oficial do MessageBird conta tickets "Resolvidos" no período. Consultas baseadas em `cnvs_created` podem causar discrepâncias, pois ignoram tickets abertos anteriormente mas resolvidos no mês atual. Prefira filtrar por `cnvs_updated` e `status` para métricas de produtividade.
