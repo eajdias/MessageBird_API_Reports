@@ -67,16 +67,22 @@ def calculate_business_duration(start_dt: datetime, end_dt: datetime) -> float:
     return delta
 
 def _get_val(obj, keys, default=None):
-    for key in keys:
-        if key in obj:
-            return obj[key]
+    if hasattr(obj, "get"):
+        for key in keys:
+            if key in obj:
+                return obj[key]
+    else:
+        for key in keys:
+            val = getattr(obj, key, None)
+            if val is not None:
+                return val
     return default
 
 def _get_datetime(obj, keys, apply_offset=True):
     val = _get_val(obj, keys)
     return parse_datetime(val, apply_offset=apply_offset)
 
-def calculate_time_to_first_human(messages: List[Dict[str, Any]]) -> Optional[float]:
+def calculate_time_to_first_human(messages: List[Any]) -> Optional[float]:
     """Calculates minutes from last bot interaction (or ticket start) to first human agent message."""
     # Logic: Find last message before first human message. 
     # If ticket start, use ticket start time.
@@ -125,9 +131,14 @@ def get_effective_start_time(messages: List[Any], default_start: str) -> str:
     first_agent_msg_time = None
     for m in messages:
         # Support both dict (from raw rows) and RawMessageData objects
-        direction = getattr(m, 'direction', None) or m.get('msgs_direction', m.get('direction'))
-        agent_id = getattr(m, 'agent_id', None) or m.get('msgs_agnt', m.get('agent_id'))
-        created = getattr(m, 'created', None) or m.get('msgs_created', m.get('created'))
+        if hasattr(m, "get"):
+            direction = m.get('msgs_direction', m.get('direction'))
+            agent_id = m.get('msgs_agnt', m.get('agent_id'))
+            created = m.get('msgs_created', m.get('created'))
+        else:
+            direction = getattr(m, 'direction', None)
+            agent_id = getattr(m, 'agent_id', None)
+            created = getattr(m, 'created', None)
         
         if direction == "sent" and agent_id is not None:
             first_agent_msg_time = created
@@ -138,8 +149,12 @@ def get_effective_start_time(messages: List[Any], default_start: str) -> str:
         
     last_customer_msg_time = None
     for m in messages:
-        direction = getattr(m, 'direction', None) or m.get('msgs_direction', m.get('direction'))
-        created = getattr(m, 'created', None) or m.get('msgs_created', m.get('created'))
+        if hasattr(m, "get"):
+            direction = m.get('msgs_direction', m.get('direction'))
+            created = m.get('msgs_created', m.get('created'))
+        else:
+            direction = getattr(m, 'direction', None)
+            created = getattr(m, 'created', None)
         
         if direction == "received" and created <= first_agent_msg_time:
             if not last_customer_msg_time or created > last_customer_msg_time:
