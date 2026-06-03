@@ -24,7 +24,8 @@ AGENT_MSG_CNVS_QUERY = """
 
 SURVEY_DATA_METADATA_QUERY = """
     SELECT
-        a.agnt_name,
+        ca.agnt_name as conversation_agent_name,
+        ma.agnt_name as message_agent_name,
         c.cnts_name,
         c.cnts_phone,
         cv.cnvs_id,
@@ -46,7 +47,8 @@ SURVEY_DATA_METADATA_QUERY = """
         qt.queue_time
     FROM messages m
     JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
-    LEFT JOIN agents a ON cv.cnvs_agnt = a.agnt_id
+    LEFT JOIN agents ca ON cv.cnvs_agnt = ca.agnt_id
+    LEFT JOIN agents ma ON m.msgs_agnt = ma.agnt_id
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
     LEFT JOIN (
         SELECT m2.msgs_cnvs, MAX(m2.msgs_created) as queue_time
@@ -128,7 +130,8 @@ FETCH_GROUPS_QUERY = """
 
 SURVEY_DATA_METADATA_QUERY_ALL = """
     SELECT
-        a.agnt_name,
+        ca.agnt_name as conversation_agent_name,
+        ma.agnt_name as message_agent_name,
         c.cnts_name,
         c.cnts_phone,
         cv.cnvs_id,
@@ -150,7 +153,8 @@ SURVEY_DATA_METADATA_QUERY_ALL = """
         qt.queue_time
     FROM messages m
     JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
-    LEFT JOIN agents a ON cv.cnvs_agnt = a.agnt_id
+    LEFT JOIN agents ca ON cv.cnvs_agnt = ca.agnt_id
+    LEFT JOIN agents ma ON m.msgs_agnt = ma.agnt_id
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
     LEFT JOIN (
         SELECT m2.msgs_cnvs, MAX(m2.msgs_created) as queue_time

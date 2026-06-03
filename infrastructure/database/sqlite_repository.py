@@ -25,14 +25,15 @@ class SqliteReportRepository(ReportRepository):
         
         for r in rows:
             cid = r["cnvs_id"]
-            agnt_name = r["agnt_name"] or "Desconhecido"
+            conv_agnt_name = r["conversation_agent_name"] or "Desconhecido"
+            msg_agnt_name = r["message_agent_name"]
             
             # Apply agent group filter if provided
-            if agent_group and constants.get_agent_group(agnt_name) != agent_group:
+            if agent_group and constants.get_agent_group(conv_agnt_name) != agent_group:
                 continue
 
             if cid not in conversations:
-                raw_msgs = [RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], agnt_name)]
+                raw_msgs = [RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name)]
                 conversations[cid] = RawConversationData(
                     id=cid,
                     contact=r["cnts_name"] or "Unknown",
@@ -49,12 +50,12 @@ class SqliteReportRepository(ReportRepository):
                     contact_reason=constants.resolve_reason(r["cnvs_dept"], r["cnvs_contact_reason"]),
                     occurrence=constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"]),
                     metadata={
-                        "agent_name": agnt_name,
+                        "agent_name": conv_agnt_name,
                         "software": r["cnvs_software"]
                     }
                 )
             else:
-                conversations[cid].msgs.append(RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], agnt_name))
+                conversations[cid].msgs.append(RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name))
 
         return list(conversations.values())
 
@@ -122,13 +123,14 @@ class SqliteReportRepository(ReportRepository):
 
         for r in rows:
             cid = r["cnvs_id"]
-            agnt_name = r["agnt_name"] or "Desconhecido"
+            conv_agnt_name = r["conversation_agent_name"] or "Desconhecido"
+            msg_agnt_name = r["message_agent_name"]
 
-            if agent_group and constants.get_agent_group(agnt_name) != agent_group:
+            if agent_group and constants.get_agent_group(conv_agnt_name) != agent_group:
                 continue
 
             if cid not in conversations:
-                raw_msgs = [RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], agnt_name)]
+                raw_msgs = [RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name)]
                 conversations[cid] = RawConversationData(
                     id=cid,
                     contact=r["cnts_name"] or "Unknown",
@@ -145,12 +147,12 @@ class SqliteReportRepository(ReportRepository):
                     contact_reason=constants.resolve_reason(r["cnvs_dept"], r["cnvs_contact_reason"]),
                     occurrence=constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"]),
                     metadata={
-                        "agent_name": agnt_name,
+                        "agent_name": conv_agnt_name,
                         "software": r["cnvs_software"]
                     }
                 )
             else:
-                conversations[cid].msgs.append(RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], agnt_name))
+                conversations[cid].msgs.append(RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name))
 
         return list(conversations.values())
 
