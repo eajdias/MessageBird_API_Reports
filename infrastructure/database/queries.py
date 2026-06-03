@@ -17,7 +17,8 @@ AGENT_MSG_CNVS_QUERY = """
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
     JOIN messages m ON cv.cnvs_id = m.msgs_cnvs
     LEFT JOIN agents a ON m.msgs_agnt = a.agnt_id
-    WHERE datetime(cv.cnvs_created) BETWEEN ? AND ?
+    WHERE (datetime(cv.cnvs_created) BETWEEN ? AND ?)
+       OR (datetime(cv.cnvs_updated) BETWEEN ? AND ?)
     ORDER BY cv.cnvs_id, m.msgs_created ASC
 """
 
@@ -44,8 +45,8 @@ SURVEY_DATA_METADATA_QUERY = """
         m.msgs_agnt,
         qt.queue_time
     FROM messages m
-    JOIN agents a ON m.msgs_agnt = a.agnt_id
     JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
+    LEFT JOIN agents a ON cv.cnvs_agnt = a.agnt_id
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
     LEFT JOIN (
         SELECT m2.msgs_cnvs, MAX(m2.msgs_created) as queue_time
@@ -59,7 +60,8 @@ SURVEY_DATA_METADATA_QUERY = """
         WHERE m2.msgs_direction = 'received' AND m2.msgs_created <= fa.first_agent_msg
         GROUP BY m2.msgs_cnvs
     ) qt ON qt.msgs_cnvs = cv.cnvs_id
-    WHERE datetime(cv.cnvs_created) BETWEEN ? AND ?
+    WHERE (datetime(cv.cnvs_created) BETWEEN ? AND ?)
+       OR (datetime(cv.cnvs_updated) BETWEEN ? AND ?)
     ORDER BY cv.cnvs_id, m.msgs_created ASC
 """
 
@@ -108,8 +110,8 @@ SELECT
 FROM conversations c
 LEFT JOIN contacts ct ON ct.cnts_id = c.cnvs_cnts
 LEFT JOIN agents a ON a.agnt_id = c.cnvs_agnt
-WHERE c.cnvs_created >= ?
-  AND c.cnvs_created <= ?
+WHERE (c.cnvs_created >= ? AND c.cnvs_created <= ?)
+   OR (c.cnvs_updated >= ? AND c.cnvs_updated <= ?)
 ORDER BY c.cnvs_created
 """
 
@@ -120,7 +122,8 @@ FETCH_GROUPS_QUERY = """
     SELECT DISTINCT a.agnt_name
     FROM agents a
     JOIN conversations c ON c.cnvs_agnt = a.agnt_id
-    WHERE datetime(c.cnvs_created) BETWEEN ? AND ?
+    WHERE (datetime(c.cnvs_created) BETWEEN ? AND ?)
+       OR (datetime(c.cnvs_updated) BETWEEN ? AND ?)
 """
 
 SURVEY_DATA_METADATA_QUERY_ALL = """
@@ -146,8 +149,8 @@ SURVEY_DATA_METADATA_QUERY_ALL = """
         m.msgs_agnt,
         qt.queue_time
     FROM messages m
-    JOIN agents a ON m.msgs_agnt = a.agnt_id
     JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
+    LEFT JOIN agents a ON cv.cnvs_agnt = a.agnt_id
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
     LEFT JOIN (
         SELECT m2.msgs_cnvs, MAX(m2.msgs_created) as queue_time

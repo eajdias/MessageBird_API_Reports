@@ -18,13 +18,14 @@ class SqliteReportRepository(ReportRepository):
         This method is a pure data provider - no aggregation logic.
         """
         start_dt_utc, end_dt_utc = logic.get_utc_range(start_date, end_date)
-        rows = await self.db.fetch_all(queries.SURVEY_DATA_METADATA_QUERY, (start_dt_utc, end_dt_utc))
+        # Pass the date range twice to satisfy the (created OR updated) logic in the query
+        rows = await self.db.fetch_all(queries.SURVEY_DATA_METADATA_QUERY, (start_dt_utc, end_dt_utc, start_dt_utc, end_dt_utc))
 
         conversations: Dict[str, RawConversationData] = {}
         
         for r in rows:
             cid = r["cnvs_id"]
-            agnt_name = r["agnt_name"]
+            agnt_name = r["agnt_name"] or "Desconhecido"
             
             # Apply agent group filter if provided
             if agent_group and constants.get_agent_group(agnt_name) != agent_group:
@@ -82,7 +83,7 @@ class SqliteReportRepository(ReportRepository):
 
     async def fetch_auditoria_demanda_raw(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
         start_dt_utc, end_dt_utc = logic.get_utc_range(start_date, end_date)
-        return await self.db.fetch_all(queries.AGENT_MSG_CNVS_QUERY, (start_dt_utc, end_dt_utc))
+        return await self.db.fetch_all(queries.AGENT_MSG_CNVS_QUERY, (start_dt_utc, end_dt_utc, start_dt_utc, end_dt_utc))
 
     async def fetch_auditoria_demanda_data(self, start_date: str, end_date: str, agent_group: str = None) -> Tuple[List[str], List[Any]]:
         from application.services.auditoria_demanda_service import AuditoriaDemandaService
@@ -91,7 +92,7 @@ class SqliteReportRepository(ReportRepository):
 
     async def fetch_auditoria_os_raw(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
         start_dt_utc, end_dt_utc = logic.get_utc_range(start_date, end_date)
-        return await self.db.fetch_all(queries.OS_DATA_QUERY, (start_dt_utc, end_dt_utc))
+        return await self.db.fetch_all(queries.OS_DATA_QUERY, (start_dt_utc, end_dt_utc, start_dt_utc, end_dt_utc))
 
     async def fetch_auditoria_os_data(self, start_date: str, end_date: str, agent_group: str = None) -> Tuple[List[str], List[Any]]:
         from application.services.auditoria_os_service import AuditoriaOSService
@@ -105,7 +106,7 @@ class SqliteReportRepository(ReportRepository):
 
     async def fetch_all_groups(self, start_date: str, end_date: str) -> List[str]:
         start_dt, end_dt = logic.get_utc_range(start_date, end_date)
-        rows = await self.db.fetch_all(queries.FETCH_GROUPS_QUERY, (start_dt, end_dt))
+        rows = await self.db.fetch_all(queries.FETCH_GROUPS_QUERY, (start_dt, end_dt, start_dt, end_dt))
         agents = [r[0] for r in rows]
         groups = set()
         for a in agents:
@@ -121,7 +122,7 @@ class SqliteReportRepository(ReportRepository):
 
         for r in rows:
             cid = r["cnvs_id"]
-            agnt_name = r["agnt_name"]
+            agnt_name = r["agnt_name"] or "Desconhecido"
 
             if agent_group and constants.get_agent_group(agnt_name) != agent_group:
                 continue
