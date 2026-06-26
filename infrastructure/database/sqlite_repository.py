@@ -64,7 +64,7 @@ class SqliteReportRepository(ReportRepository):
     async def fetch_auditoria_contatos_raw(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
         start_dt, end_dt = logic.get_utc_range(start_date, end_date)
         query = """
-        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_rating_agent, m.msgs_created, a.agnt_name
+        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_rating_agent, cv.cnvs_rating_nps, m.msgs_created, a.agnt_name
         FROM contacts c
         JOIN conversations cv ON c.cnts_id = cv.cnvs_cnts
         JOIN messages m ON cv.cnvs_id = m.msgs_cnvs
@@ -172,7 +172,7 @@ class SqliteReportRepository(ReportRepository):
 
     async def fetch_auditoria_contatos_raw_all(self) -> List[Dict[str, Any]]:
         query = """
-        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_rating_agent, m.msgs_created, a.agnt_name
+        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_rating_agent, cv.cnvs_rating_nps, m.msgs_created, a.agnt_name
         FROM contacts c
         JOIN conversations cv ON c.cnts_id = cv.cnvs_cnts
         JOIN messages m ON cv.cnvs_id = m.msgs_cnvs

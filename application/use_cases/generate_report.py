@@ -28,9 +28,11 @@ class GenerateReportUseCase:
         self.auditoria_contatos_service = AuditoriaContatosService(repository)
         self.auditoria_os_service = AuditoriaOSService(repository)
 
-    async def execute(self, year: int, month: Optional[int], output_dir: str, skip_os: bool = False, sector: Optional[str] = None, report_type: str = "monthly"):
+    async def execute(self, year: int, month: Optional[int], output_dir: str, skip_os: bool = False, sector: Optional[str] = None, report_type: str = "monthly", start_date: Optional[str] = None, end_date: Optional[str] = None):
         if report_type == "total":
             return await self._generate_system_total(output_dir, skip_os, sector)
+        if report_type == "custom_range" and start_date and end_date:
+            return await self._generate_custom_range(start_date, end_date, output_dir, skip_os, sector)
         if month:
             return await self._generate_monthly(year, month, output_dir, skip_os, sector)
         else:
@@ -40,10 +42,15 @@ class GenerateReportUseCase:
         _, last_day = calendar.monthrange(year, month)
         start_date = f"{year}-{month:02d}-01"
         end_date = f"{year}-{month:02d}-{last_day}"
+        return await self._generate_custom_range(start_date, end_date, output_dir, skip_os, sector)
+
+    async def _generate_custom_range(self, start_date: str, end_date: str, output_dir: str, skip_os: bool, sector: Optional[str]):
 
         # 0. Validation & Metadata
         unmapped_agents, unmapped_depts = await self.repository.fetch_unmapped_counts()
-        report_subdir = os.path.join(output_dir, str(year), f"{year}-{month:02d}")
+        safe_start = start_date.replace("-", "").replace("/", "")
+        safe_end = end_date.replace("-", "").replace("/", "")
+        report_subdir = os.path.join(output_dir, f"{safe_start}_{safe_end}")
         os.makedirs(report_subdir, exist_ok=True)
 
         # 1. Fetch Raw Data
@@ -54,40 +61,14 @@ class GenerateReportUseCase:
 
         # 3. Global Executive Report
         if not sector:
-            # Load previous month metrics for MoM comparison
-            cache = load_cache()
-            prev_key = get_previous_month_key(year, month)
-            prev_metrics = cache.get(prev_key, {})
-
             dashboard_dto = self.aggregator.aggregate_dashboard(
                 processed_data,
                 title="DASHBOARD EXECUTIVO - OMNICHANNEL",
                 start_date=start_date,
                 end_date=end_date,
-                prev_month_metrics=prev_metrics,
             )
-            dash_path = os.path.join(report_subdir, f"Dashboard_Executivo_GLOBAL_{year}_{month:02d}.xlsx")
+            dash_path = os.path.join(report_subdir, f"Dashboard_Executivo_GLOBAL_{safe_start}_{safe_end}.xlsx")
             self.exporter.export_executive_dashboard(dash_path, dashboard_dto)
-
-            # Save current month metrics to cache for future MoM comparison
-            gm = dashboard_dto.general_metrics
-            current_key = f"{year}-{month:02d}"
-            cache[current_key] = {
-                "total_chats": gm.get("total_chats", 0),
-                "total_msgs": gm.get("total_msgs", 0),
-                "avg_art": gm.get("avg_art"),
-                "avg_duration": gm.get("avg_duration"),
-                "real_nps": gm.get("real_nps"),
-                "sla_compliance": gm.get("sla_compliance"),
-                "avg_rating": gm.get("avg_rating"),
-                "compliments": gm.get("compliments", 0),
-                "negatives": gm.get("negatives", 0),
-                "pct_compliments": gm.get("pct_compliments"),
-                "pct_negatives": gm.get("pct_negatives"),
-                "unique_clients": gm.get("unique_clients", 0),
-                "returners": gm.get("returners", 0),
-            }
-            save_cache(cache)
 
         # 4. Sector-specific processing
         all_groups = await self.repository.fetch_all_groups(start_date, end_date)
@@ -106,25 +87,23 @@ class GenerateReportUseCase:
             group_raw = [r for r in raw_data if constants.get_agent_group(r.metadata.get("agent_name")) == group]
             group_processed = [p for p in processed_data if constants.get_agent_group(p.agent) == group]
             
-            # Group Dashboard (Integrado: Dash + Heatmap + Tabela)
+            # Group Dashboard
             g_dash_dto = self.aggregator.aggregate_dashboard(
                 group_processed,
                 title=f"DASHBOARD EXECUTIVO - {group.upper()}",
                 start_date=start_date,
                 end_date=end_date
             )
-            g_dash_path = os.path.join(group_path, f"Dashboard_Executivo_{safe_group}_{year}_{month:02d}.xlsx")
+            g_dash_path = os.path.join(group_path, f"Dashboard_Executivo_{safe_group}_{safe_start}_{safe_end}.xlsx")
             self.exporter.export_executive_dashboard(g_dash_path, g_dash_dto)
 
             # Audit Reports
             auditoria_dir = os.path.join(group_path, "auditoria")
             os.makedirs(auditoria_dir, exist_ok=True)
             
-            # Contatos (via domain service)
             c_header, c_data = await self.auditoria_contatos_service.build_report(start_date, end_date, agent_group=group)
             if c_header: self.exporter.export_excel(os.path.join(auditoria_dir, "auditoria_contatos.xlsx"), c_header, c_data, "Contatos")
             
-            # OS / Atendimentos (via domain service)
             if not skip_os:
                 os_header, os_data = await self.auditoria_os_service.build_report(start_date, end_date, agent_group=group)
                 if os_header: 
@@ -138,6 +117,11 @@ class GenerateReportUseCase:
         group_rows = self.aggregator.build_excel_rows(processed_data, report_type="groups")
         agent_rows = self.aggregator.build_excel_rows(processed_data, report_type="agents")
         
+        # Filter by sector if specified
+        if sector:
+            group_rows = [r for r in group_rows if r[0] == sector or r[0] == "TOTAIS"]
+            agent_rows = [r for r in agent_rows if r[1] == sector or r[2] == "TOTAIS"]
+        
         summary_data = {
             "start_date": start_date,
             "end_date": end_date,
@@ -146,7 +130,7 @@ class GenerateReportUseCase:
             "unmapped": (unmapped_agents, unmapped_depts)
         }
         
-        self.exporter.export_summary(os.path.join(report_subdir, "README.md"), "Relatório Mensal Omnichannel", start_date, end_date, summary_data)
+        self.exporter.export_summary(os.path.join(report_subdir, "README.md"), "Relatório Período Personalizado Omnichannel", start_date, end_date, summary_data)
         
         return summary_data
 

@@ -17,7 +17,7 @@ class AuditoriaContatosService:
         for row in raw_data:
             cid = row["cnts_id"]
             if cid not in contact_data:
-                contact_data[cid] = {"name": row["cnts_name"] or "Unknown", "phone": row["cnts_phone"] or "", "msg_count": 0, "convs": set(), "conv_dates": {}, "conv_agents": {}, "conv_ratings": {}}
+                contact_data[cid] = {"name": row["cnts_name"] or "Unknown", "phone": row["cnts_phone"] or "", "msg_count": 0, "convs": set(), "conv_dates": {}, "conv_agents": {}, "conv_ratings": {}, "conv_nps": {}}
             d = contact_data[cid]; cv_id = row["cnvs_id"]; msg_dt = logic.parse_datetime(row["msgs_created"], apply_offset=True)
             if not msg_dt: continue
             msg_date = msg_dt.strftime("%Y-%m-%d")
@@ -26,6 +26,7 @@ class AuditoriaContatosService:
                 if cv_id not in d["conv_dates"]: d["conv_dates"][cv_id] = msg_date
                 if cv_id not in d["conv_agents"]: d["conv_agents"][cv_id] = None
                 if row["cnvs_rating_agent"] is not None: d["conv_ratings"][cv_id] = row["cnvs_rating_agent"]
+                if row["cnvs_rating_nps"] is not None: d["conv_nps"][cv_id] = row["cnvs_rating_nps"]
             d["msg_count"] += 1
             if row["agnt_name"] and row["agnt_name"].lower() != "sistema":
                 if d["conv_agents"][cv_id] is None: d["conv_agents"][cv_id] = row["agnt_name"]
@@ -35,10 +36,13 @@ class AuditoriaContatosService:
             if not human_cvs: continue
             agents_list = [d["conv_agents"][cid] for cid in human_cvs]
             ratings = [d["conv_ratings"][cid] for cid in human_cvs if cid in d["conv_ratings"]]
+            nps_values = [d["conv_nps"][cid] for cid in human_cvs if cid in d["conv_nps"]]
             counts = Counter(agents_list)
             data_list.append([
                 max(counts, key=counts.get) if counts else "", d["name"], d["phone"], len(human_cvs), d["msg_count"],
-                round(sum(ratings)/len(ratings), 1) if ratings else "", "; ".join([d["conv_dates"].get(cid, "") for cid in human_cvs]), "; ".join(agents_list)
+                round(sum(ratings)/len(ratings), 1) if ratings else "",
+                round(sum(nps_values)/len(nps_values), 1) if nps_values else "",
+                "; ".join([d["conv_dates"].get(cid, "") for cid in human_cvs]), "; ".join(agents_list)
             ])
         return constants.CONTACTS_HEADER, data_list
 
@@ -51,7 +55,7 @@ class AuditoriaContatosService:
         for row in raw_data:
             cid = row["cnts_id"]
             if cid not in contact_data:
-                contact_data[cid] = {"name": row["cnts_name"] or "Unknown", "phone": row["cnts_phone"] or "", "msg_count": 0, "convs": set(), "conv_dates": {}, "conv_agents": {}, "conv_ratings": {}}
+                contact_data[cid] = {"name": row["cnts_name"] or "Unknown", "phone": row["cnts_phone"] or "", "msg_count": 0, "convs": set(), "conv_dates": {}, "conv_agents": {}, "conv_ratings": {}, "conv_nps": {}}
             d = contact_data[cid]; cv_id = row["cnvs_id"]; msg_dt = logic.parse_datetime(row["msgs_created"], apply_offset=True)
             if not msg_dt: continue
             msg_date = msg_dt.strftime("%Y-%m-%d")
@@ -60,6 +64,7 @@ class AuditoriaContatosService:
                 if cv_id not in d["conv_dates"]: d["conv_dates"][cv_id] = msg_date
                 if cv_id not in d["conv_agents"]: d["conv_agents"][cv_id] = None
                 if row["cnvs_rating_agent"] is not None: d["conv_ratings"][cv_id] = row["cnvs_rating_agent"]
+                if row["cnvs_rating_nps"] is not None: d["conv_nps"][cv_id] = row["cnvs_rating_nps"]
             d["msg_count"] += 1
             if row["agnt_name"] and row["agnt_name"].lower() != "sistema":
                 if d["conv_agents"][cv_id] is None: d["conv_agents"][cv_id] = row["agnt_name"]
@@ -69,9 +74,12 @@ class AuditoriaContatosService:
             if not human_cvs: continue
             agents_list = [d["conv_agents"][cid] for cid in human_cvs]
             ratings = [d["conv_ratings"][cid] for cid in human_cvs if cid in d["conv_ratings"]]
+            nps_values = [d["conv_nps"][cid] for cid in human_cvs if cid in d["conv_nps"]]
             counts = Counter(agents_list)
             data_list.append([
                 max(counts, key=counts.get) if counts else "", d["name"], d["phone"], len(human_cvs), d["msg_count"],
-                round(sum(ratings)/len(ratings), 1) if ratings else "", "; ".join([d["conv_dates"].get(cid, "") for cid in human_cvs]), "; ".join(agents_list)
+                round(sum(ratings)/len(ratings), 1) if ratings else "",
+                round(sum(nps_values)/len(nps_values), 1) if nps_values else "",
+                "; ".join([d["conv_dates"].get(cid, "") for cid in human_cvs]), "; ".join(agents_list)
             ])
         return constants.CONTACTS_HEADER, data_list

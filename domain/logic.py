@@ -33,9 +33,14 @@ def parse_datetime(dt_string: Optional[str], apply_offset: bool = False) -> Opti
         return None
 
 def local_date_bounds(start_date_str: str, end_date_str: str) -> Tuple[datetime, datetime]:
-    start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
-    end_dt = datetime.strptime(end_date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-    return start_dt, end_dt
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            start_dt = datetime.strptime(start_date_str, fmt)
+            end_dt = datetime.strptime(end_date_str, fmt).replace(hour=23, minute=59, second=59)
+            return start_dt, end_dt
+        except ValueError:
+            continue
+    raise ValueError(f"Invalid date format: {start_date_str} or {end_date_str}. Use YYYY-MM-DD or DD/MM/YYYY")
 
 def to_utc_sqlite_string(dt: datetime) -> str:
     # Convert local to UTC for SQLite storage

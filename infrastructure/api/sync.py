@@ -612,9 +612,6 @@ class SyncManager:
             msg_count += sum(results)
             logger.info(f"  ...processed {min(i + chunk_size, total)}/{total} convs")
 
-        await self.update_agent_statistics(conn)
-        await self.recalculate_metrics(conn)
-
         logger.info(
             "Monthly messages sync completed. "
             f"{total} conversations, {msg_count} messages from {year:04d}-{month:02d} onward."
@@ -916,6 +913,7 @@ class SyncManager:
         # Use existing logic from backfill but specialized for one conversation
         from datetime import datetime, timedelta
         import re
+        from domain import constants
 
         cnvs_row = await conn.fetch_one(
             "SELECT cnvs_id, cnvs_status, cnvs_rating_agent, cnvs_rating_nps FROM conversations WHERE cnvs_bird = ?",
@@ -928,14 +926,14 @@ class SyncManager:
         # Question patterns — order matters: more specific patterns first
         # rating_nps uses "Avalie nosso atendimento" (NOT "até 10" — bot uses 🔟 emoji, not text)
         QUESTIONS = {
-            "lang": r"Escolha seu idioma",
+            "lang": r"(?:Escolha|Selecione) seu idioma",
             "software": r"Qual seria o sistema",
             "tax_id": r"Informe por favor o CNPJ de sua empresa ou CPF",
             "dept": r"Selecione o departamento desejado",
             "contact_reason": r"Qual o motivo do contato",
             "occurrence": r"Qual seria a ocorrência",
             "rating_agent": r"como você avalia o atendimento do técnico",
-            "rating_nps": r"Avalie nosso atendimento",
+            "rating_nps": r"Avalie.*(?:nosso atendimento|a nossa Empresa)",
         }
 
         messages = await conn.fetch_all(
@@ -947,13 +945,21 @@ class SyncManager:
         for i, msg in enumerate(messages):
             content = msg["msgs_content"] or ""
 
-            # Extract description from triagem summary (sent by bot)
+            # Extract data from triagem summary (sent by bot)
             if msg["msgs_direction"] == "sent" and PHRASE_TICKET_HEADER in content:
                 lines = [l.strip() for l in content.split("\n")]
                 try:
                     idx = next(j for j, l in enumerate(lines) if PHRASE_TICKET_HEADER in l)
                     ticket_lines = [l for l in lines[idx + 1:] if l and not l.startswith("===")]
-                    if len(ticket_lines) > 3:
+                    # ticket_lines format: [system, dept, contact_reason, description...]
+                    if len(ticket_lines) >= 4:
+                        if "cnvs_contact_reason" not in updates:
+                            reason_text = ticket_lines[2]
+                            for dept_id, reasons in constants.REASON_MAP.items():
+                                for reason_id, reason_label in reasons.items():
+                                    if reason_label.lower() == reason_text.lower():
+                                        updates["cnvs_contact_reason"] = int(reason_id)
+                                        break
                         updates["cnvs_description"] = " ".join(ticket_lines[3:])
                     elif ticket_lines:
                         updates["cnvs_description"] = ticket_lines[-1]
@@ -1007,7 +1013,7 @@ class SyncManager:
                                 updates["cnvs_lang"] = num; found = True
                             elif matched_key == "dept" and 1 <= num <= 5:
                                 updates["cnvs_dept"] = num; found = True
-                            elif matched_key == "contact_reason" and 1 <= num <= 3:
+                            elif matched_key == "contact_reason" and 1 <= num <= 6:
                                 updates["cnvs_contact_reason"] = num; found = True
                             elif matched_key == "occurrence" and 1 <= num <= 6:
                                 updates["cnvs_occurrence"] = num; found = True
@@ -1047,10 +1053,17 @@ class SyncManager:
             JOIN messages m ON m.msgs_cnvs = cv.cnvs_id
             WHERE m.msgs_direction = 'sent'
               AND (
-                m.msgs_content LIKE '%Avalie nosso atendimento%'
-                OR m.msgs_content LIKE '%como você avalia o atendimento%'
+                m.msgs_content LIKE '%Avalie%'
+                OR m.msgs_content LIKE '%avalia o atendimento%'
+                OR m.msgs_content LIKE '%Qual o motivo do contato%'
+                OR m.msgs_content LIKE '%Selecione o departamento%'
               )
-              AND (cv.cnvs_rating_nps IS NULL OR cv.cnvs_rating_agent IS NULL)
+              AND (
+                cv.cnvs_rating_nps IS NULL
+                OR cv.cnvs_rating_agent IS NULL
+                OR cv.cnvs_contact_reason IS NULL
+                OR cv.cnvs_dept IS NULL
+              )
             ORDER BY cv.cnvs_id
             """
         )

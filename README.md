@@ -1,40 +1,152 @@
 # Standalone Report Generator - MessageBird Omnichannel
 
-Este projeto é uma ferramenta autônoma para sincronização de dados e geração de relatórios avançados baseados na API Omnichannel da MessageBird. Ele foi extraído do projeto base para funcionar de forma completamente isolada, sem depender de ferramentas conversacionais (Model Context Protocol).
+Ferramenta autonoma para sincronizacao de dados e geracao de relatorios avancados baseados na API Omnichannel da MessageBird. Funciona de forma completamente isolada, sem depender de ferramentas conversacionais (MCP).
 
-## 🚀 Propósito
+## Visao Geral
 
-O objetivo deste módulo é garantir que gestores possam puxar dados granulares, emitir laudos e realizar análises de SLA (Service Level Agreement) em um ambiente controlado, de forma automatizada (via CRON jobs) ou manual via CLI.
+| Recurso | Descricao |
+|:--------|:----------|
+| **Sincronizacao** | Espelha contatos, conversas e mensagens da API para SQLite local |
+| **Relatorios** | Dashboards Excel com ART, NPS, SLA e metricas por agente/departamento |
+| **Auditoria** | Planilhas de contatos, demandas e Ordens de Servico em PDF |
+| **Setores** | Filtragem por grupos organizacionais (Comercial, Suporte, etc.) |
 
-Sua arquitetura foi construída baseada no padrão **Clean Architecture**, dividindo responsabilidades em camadas:
-- **Domain:** Lógicas puras de fuso horário, limites SLA e mapeamentos corporativos.
-- **Application:** Os Casos de Uso (ex: `GenerateReportUseCase`, `SyncDatabaseUseCase`), serviços de agregação e serviços de auditoria.
-- **Infrastructure:** Conexão com SQLite (`aiosqlite`), clientes de API (`httpx`) e exportadores nativos (`xlsxwriter`, `fpdf2`).
-- **Presentation:** Uma interface de terminal CLI rica em detalhes (via `rich`).
+## Inicio Rapido
 
-## 📚 Como Começar
+### 1. Instalacao
 
-O fluxo principal está automatizado via `Makefile`.
+```bash
+# Copiar template de ambiente
+cp config/.env.example config/.env
 
-1. **Copie o template de ambiente** e preencha suas credenciais:
-   ```bash
-   cp config/.env.example config/.env
-   ```
-2. **Instale as dependências** (com lockfile reproduzível via `uv.lock`):
-   ```bash
-   make install
-   ```
-3. **Leia a Documentação Completa:**
-   Para instruções detalhadas de como usar os filtros de setor, emitir Ordens de Serviço (OS) e atualizar o banco de dados, consulte o guia oficial:
+# Editar com suas credenciais da MessageBird
+nano config/.env
 
-   👉 **[Ler o Guia de Uso (docs/guia_de_uso.md)](docs/guia_de_uso.md)**
+# Copiar template de configuracao de negocios
+cp config/business_config.json.example config/business_config.json
 
-## ✨ Principais Funcionalidades
+# Editar com seus agentes e departamentos
+nano config/business_config.json
 
-- **Sincronização Bidirecional:** Conecta na API da MessageBird e espelha contatos, conversas e mensagens de forma incremental.
-- **Isolamento por Setor:** Permite gerar pastas de relatórios divididas por departamentos organizacionais (Comercial, Suporte, Diretoria), evitando que áreas acessem dados que não lhes pertencem.
-- **Dashboard Global (Excel):** Uma tabela complexa mostrando ART, NPS e conformidade de SLA.
-- **Auditoria Detalhada:** Relatórios de contatos, demanda horária e Ordens de Serviço, processados por serviços de aplicação dedicados.
-- **Faturas em PDF:** Geração de Protocolos/Ordens de Serviço em `.pdf` por cada atendimento.
-- **Build Reproduzível:** Gerenciamento de dependências via `uv.lock`, garantindo versões consistentes em todos os ambientes.
-- **Testes de Integração:** Pipeline completo validado (`process_all` → `aggregate_statistics` → `build_excel_rows`).
+# Instalar dependencias
+make install
+```
+
+### 2. Primeira Sincronizacao
+
+Para um banco com dados de um periodo especifico (ex: ultimo mes):
+
+```bash
+# Sincronizar um mes inteiro (conversas + mensagens)
+make sync-monthly YEAR=2026 MONTH=6
+```
+
+### 3. Gerar Relatorio
+
+```bash
+# Relatorio mensal
+make report YEAR=2026 MONTH=6
+
+# Relatorio de periodo personalizado
+make report-dates FROM=2026-05-25 TO=2026-06-26
+```
+
+## Comandos Disponiveis
+
+### Sincronizacao do Banco de Dados
+
+| Comando | Descricao | Quando usar |
+|:--------|:----------|:------------|
+| `make sync` | Incremental (ultimos 60 min) | Cron job a cada hora |
+| `make sync-daily` | Diario (ultimo dia com mensagens) | Cron job diario |
+| `make sync-monthly YEAR=2026 MONTH=6` | Mes especifico (conversas + mensagens) | Backfill de um mes |
+| `make sync-daily --messages-days 7` | Ultimos N dias com mensagens | Periodo personalizado |
+
+### Geracao de Relatorios
+
+| Comando | Descricao | Saida |
+|:--------|:----------|:------|
+| `make report YEAR=2026 MONTH=6` | Relatorio mensal | `reports/2026/2026-06/` |
+| `make report-dates FROM=2026-05-25 TO=2026-06-26` | Periodo personalizado | `reports/20260525_20260626/` |
+| `make annual YEAR=2026` | Relatorio anual consolidado | `reports/2026/` |
+| `make total` | Todo o historico do banco | `reports/total/` |
+
+### Filtrar por Setor
+
+Adicione `SECTOR="Nome do Setor"` para gerar apenas para um grupo:
+
+```bash
+make report YEAR=2026 MONTH=6 SECTOR="Suporte Tecnico"
+make report-dates FROM=2026-05-25 TO=2026-06-26 SECTOR="Comercial"
+make annual YEAR=2026 SECTOR="Gerencia"
+make total SECTOR="Financeiro"
+```
+
+## Estrutura de Saida
+
+### Relatorio Mensal
+
+```
+reports/2026/2026-06/
+  Dashboard_Executivo_GLOBAL_2026_06.xlsx    # Dashboard consolidado
+  README.md                                  # Resumo executivo
+  Suporte_Tecnico/
+    Dashboard_Executivo_Suporte_Tecnico_2026_06.xlsx
+    auditoria/
+      auditoria_contatos.xlsx                # Lista de contatos
+      auditoria_os.xlsx                      # Ordens de servico
+      OS/                                    # PDFs individuais
+  Comercial/
+    ...
+```
+
+### Relatorio de Periodo Personalizado
+
+```
+reports/20260525_20260626/
+  Dashboard_Executivo_GLOBAL_20260525_20260626.xlsx
+  README.md
+  Suporte_Tecnico/
+    ...
+```
+
+### Relatorio Anual
+
+```
+reports/2026/
+  Dashboard_Executivo_ANUAL_2026.xlsx        # Inclui aba "Evolucao Mensal"
+  README.md
+  Suporte_Tecnico/
+    Dashboard_Anual_Suporte_Tecnico_2026.xlsx
+    ...
+```
+
+## Uso Direto via Python
+
+Se precisar de controle fino, execute diretamente:
+
+```bash
+# Ver ajuda completa
+uv run python main.py --help
+uv run python main.py report --help
+uv run python main.py sync --help
+
+# Sincronizar periodo especifico
+uv run python main.py sync --year 2026 --month 6
+
+# Gerar relatorio de periodo personalizado
+uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26
+```
+
+## Documentacao Completa
+
+- [Guia de Uso](docs/guia_de_uso.md) - Instrucoes detalhadas de cada comando
+- [Configuracao](docs/configuracao.md) - Como preencher `.env` e `business_config.json`
+- [Arquitetura](docs/arquitetura_e_desenvolvimento.md) - Padroes e estrutura do codigo
+- [Testes Manuais](docs/testes_manuais.md) - Procedimentos de teste
+
+## Requisitos
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) (gerenciador de dependencias)
+- Chave de API da MessageBird (Bird Conversations API)

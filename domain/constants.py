@@ -70,6 +70,7 @@ CONTACTS_HEADER = [
     "Chats no Mês",
     "Msgs no Mês",
     "Nota Média",
+    "NPS Média",
     "Datas",
     "Atendimento pelos Agentes",
 ]

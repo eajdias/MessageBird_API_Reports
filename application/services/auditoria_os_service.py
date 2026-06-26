@@ -10,6 +10,13 @@ class AuditoriaOSService:
     async def build_report(self, start_date: str, end_date: str, agent_group: str = None) -> Tuple[List[str], List[Any]]:
         rows = await self.repository.fetch_auditoria_os_raw(start_date, end_date)
 
+        # Count chats per contact to determine "Reabertura" (client had >1 chat in period)
+        contact_chat_count = {}
+        for r in rows:
+            cnts_id = r["cnts_id"]
+            if cnts_id:
+                contact_chat_count[cnts_id] = contact_chat_count.get(cnts_id, 0) + 1
+
         data_list = []
         for r in rows:
             agnt_name = r["agnt_name"] or "Não Mapeado"
@@ -24,6 +31,10 @@ class AuditoriaOSService:
 
             # Centralized duration calculation
             duration = logic.calculate_ticket_duration(r["cnvs_created"], r["cnvs_updated"])
+
+            # Reabertura: contact had more than 1 chat in the period
+            cnts_id = r["cnts_id"]
+            has_reopening = contact_chat_count.get(cnts_id, 0) > 1
 
             data_list.append([
                 r["cnvs_bird"],
@@ -40,7 +51,7 @@ class AuditoriaOSService:
                 occurrence,
                 r["cnvs_rating_agent"] if r["cnvs_rating_agent"] is not None else "",
                 r["cnvs_rating_nps"] if r["cnvs_rating_nps"] is not None else "",
-                r["cnvs_reopened_count"] or 0,
+                "Sim" if has_reopening else "Não",
                 r["cnvs_description"] or "",
                 duration if duration > 0 else "N/D",
                 r["cnvs_id"]
@@ -51,6 +62,13 @@ class AuditoriaOSService:
     async def build_report_all(self, agent_group: str = None) -> Tuple[List[str], List[Any]]:
         rows = await self.repository.fetch_auditoria_os_raw_all()
 
+        # Count chats per contact to determine "Reabertura" (client had >1 chat in period)
+        contact_chat_count = {}
+        for r in rows:
+            cnts_id = r["cnts_id"]
+            if cnts_id:
+                contact_chat_count[cnts_id] = contact_chat_count.get(cnts_id, 0) + 1
+
         data_list = []
         for r in rows:
             agnt_name = r["agnt_name"] or "Não Mapeado"
@@ -65,6 +83,10 @@ class AuditoriaOSService:
 
             # Centralized duration calculation
             duration = logic.calculate_ticket_duration(r["cnvs_created"], r["cnvs_updated"])
+
+            # Reabertura: contact had more than 1 chat in the period
+            cnts_id = r["cnts_id"]
+            has_reopening = contact_chat_count.get(cnts_id, 0) > 1
 
             data_list.append([
                 r["cnvs_bird"],
@@ -81,7 +103,7 @@ class AuditoriaOSService:
                 occurrence,
                 r["cnvs_rating_agent"] if r["cnvs_rating_agent"] is not None else "",
                 r["cnvs_rating_nps"] if r["cnvs_rating_nps"] is not None else "",
-                r["cnvs_reopened_count"] or 0,
+                "Sim" if has_reopening else "Não",
                 r["cnvs_description"] or "",
                 duration if duration > 0 else "N/D",
                 r["cnvs_id"]

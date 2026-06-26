@@ -4,69 +4,72 @@
         "2": "SISTEMA_B"
     },
     "DEPT_MAP": {
-        "1": "Suporte Técnico",
+        "1": "Suporte Tecnico",
         "2": "Comercial",
         "3": "Financeiro",
         "4": "Ouvidoria",
-        "5": "Nova Instalação | Migração"
+        "5": "Nova Instalacao | Migracao"
     },
     "REASON_MAP": {
         "1": {
-            "1": "Problema Técnico A",
-            "2": "Ajustes de Configuração",
-            "3": "Dúvidas de Uso",
-            "4": "Arquivos Indisponíveis",
-            "5": "Licenciamento",
-            "6": "Não consta"
+            "1": "Problemas tecnicos",
+            "2": "Agendamentos",
+            "3": "Manuais de uso (PDF ou videos)"
         },
         "2": {
             "1": "Falar com um consultor comercial",
-            "2": "Agendar uma demonstração"
+            "2": "Agendar uma demonstracao"
         },
         "3": {
             "1": "Boleto",
             "2": "Nota Fiscal",
             "3": "Sistema bloqueado",
-            "4": "Mensagem de cobrança",
-            "5": "Não consta"
+            "4": "Mensagem de cobranca",
+            "5": "Nao consta"
         },
         "4": {
-            "1": "Reclamação",
-            "2": "Sugestão",
+            "1": "Reclamacao",
+            "2": "Sugestao",
             "3": "Elogio"
         }
     },
     "OCCURRENCE_MAP": {
+        "1": {
+            "1": {
+                "1": "Pedal",
+                "2": "Captura de imagem",
+                "3": "Criacao de laudos",
+                "4": "Arquivos (laudos, imagens, etc.)",
+                "5": "Vigencia",
+                "6": "Nao consta"
+            }
+        },
         "2": {
             "1": {
-                "1": "Software A",
-                "2": "Software B",
-                "3": "Software C",
-                "4": "Software D"
+                "1": "SISTEMA_A DICOM",
+                "2": "SISTEMA_A EVO",
+                "3": "SISTEMA_B",
+                "4": "ILAUDO EDITOR"
             }
         }
     },
     "LANG_MAP": {
-        "1": "Português",
+        "1": "Portugues",
         "2": "English",
-        "3": "Español"
+        "3": "Espanol"
     },
-    "AGENT_GROUPS": {
-        "Suporte Técnico": [
-            "Agente Exemplo A",
-            "Agente Exemplo B",
-            "Agente Exemplo C"
-        ],
-        "Comercial": [
-            "Consultor Exemplo A",
-            "Consultor Exemplo B"
-        ],
-        "Gerência": [
-            "Gestor A",
-            "Gestor B"
-        ],
-        "Financeiro": [
-            "Financeiro A"
-        ]
+    "AGENTS": {
+        "bird_id_do_agente_1": {
+            "name": "Nome do Agente 1",
+            "group": "Suporte Tecnico"
+        },
+        "bird_id_do_agente_2": {
+            "name": "Nome do Agente 2",
+            "group": "Suporte Tecnico"
+        },
+        "bird_id_do_agente_3": {
+            "name": "Nome do Agente 3",
+            "group": "Comercial"
+        }
     }
 }

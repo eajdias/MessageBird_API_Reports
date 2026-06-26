@@ -1,192 +1,204 @@
 # Guia de Uso: Standalone Report & Sync Tool
 
-Bem-vindo ao gerador de relatórios independente do MessageBird Omnichannel. Este projeto foi arquitetado para rodar de forma totalmente isolada (sem depender do servidor MCP) e é responsável por duas missões principais:
-
-1. **Sincronizar dados** brutos (conversas, mensagens, contatos e agentes) da API do MessageBird para um banco local SQLite de altíssima performance.
-2. **Gerar relatórios** mensais ou anuais super detalhados, quebrando a performance por agente, departamento, além de gerar planilhas de auditoria e Ordens de Serviço (OS) em formato PDF.
+Este guia explica como usar cada funcionalidade da ferramenta de sincronizacao e relatorios do MessageBird Omnichannel.
 
 ---
 
-## 🛠️ 1. Instalação e Configuração
+## 1. Instalacao e Configuracao
 
-O projeto utiliza `uv` como gerenciador de dependências e executor. Tenha o `uv` instalado — todo o resto (incluindo o Python adequado) é gerenciado automaticamente.
-
-### 1.1 Instalando Dependências
-
-Para instalar as bibliotecas necessárias (como `rich` para UI do terminal, `aiosqlite` para banco, `fpdf2` para PDF, etc) em um ambiente virtual isolado, rode:
+### 1.1 Instalando Dependencias
 
 ```bash
 make install
 ```
 
-### 1.2 Variáveis de Ambiente e Configuração
+Isso cria um ambiente virtual isolado e instala todas as bibliotecas necessarias.
 
-Este projeto se baseia em dois arquivos principais localizados na subpasta `config/`:
+### 1.2 Configuracao Inicial
 
-1. **`config/.env`**: Cópia do template [`config/.env.example`](../config/.env.example). Precisa conter suas chaves de API da MessageBird (`MESSAGEBIRD_API_KEY_LIVE`, `MESSAGEBIRD_WORKSPACE_ID_LIVE`, etc).
-2. **`config/business_config.json`**: Mapeia as regras de negócios da sua empresa, definindo quais IDs numéricos correspondem a quais departamentos e em quais "Grupos" os agentes devem ser divididos na hora de gerar o relatório.
+Antes de usar, configure dois arquivos:
 
-> **Importante:** Leia o guia detalhado em **[docs/configuracao.md](configuracao.md)** para aprender a preencher corretamente estes dois arquivos.
+```bash
+cp config/.env.example config/.env
+cp config/business_config.json.example config/business_config.json
+```
 
-3. **`m_bird.db`**: O banco de dados SQLite principal será gerado automaticamente na raiz do projeto assim que a primeira sincronização for rodada.
+Edite cada arquivo com suas credenciais e regras de negocio. Veja o guia detalhado em [configuracao.md](configuracao.md).
 
 ---
 
-## 🔄 2. Como Sincronizar o Banco de Dados
+## 2. Sincronizacao do Banco de Dados
 
-Para gerar relatórios reais, o seu banco local (`m_bird.db`) precisa estar atualizado com a nuvem. Oferecemos 3 níveis de profundidade na extração de dados:
+O banco local (`m_bird.db`) precisa ser sincronizado com a API da MessageBird antes de gerar relatorios.
 
-### A) Sincronização Incremental (Recomendado)
-Puxa apenas as conversas recentes (padrão: últimos 60 minutos). Excelente para rodar via *Cron Job* a cada hora.
+### 2.1 Sincronizacao Incremental (Cron Job)
+
+Puxa apenas conversas atualizadas nos ultimos 60 minutos. Ideal para rodar periodicamente:
+
 ```bash
 make sync
 ```
 
-### B) Sincronização Diária (Cron Job Diário)
-Para garantir que as mensagens de ontem estão perfeitamente espelhadas, sem precisar varrer anos de histórico:
+### 2.2 Sincronizacao Diaria
+
+Puxa conversas e mensagens do ultimo dia:
+
 ```bash
 make sync-daily
 ```
 
-### C) Sincronização Mensal (Backfill)
-Caso você precise puxar **todas** as mensagens e metadados referentes apenas a um mês específico (muito útil caso algum relatório tenha dado diferença):
+### 2.3 Sincronizacao Mensal (Backfill)
+
+Puxa **todas** as conversas e mensagens de um mes calendario especifico:
+
 ```bash
-make sync-monthly YEAR=2026 MONTH=4
+# Exemplo: sincronizar junho de 2026
+make sync-monthly YEAR=2026 MONTH=6
 ```
 
-### D) Sincronização Completa de Estrutura
-Sincroniza todos os Contatos, Agentes e Metadados das Conversas. Útil se você criou novas tags ou alterou status em massa no painel. *(Não faz o download de mensagens).*
-```bash
-make sync-full
-```
+**Importante:** O sync-mensal ja cria contatos automaticamente junto com as conversas. Nao e necessario rodar um sync estrutural separado.
 
-### E) Sincronização Total (Pesado)
-Além da estrutura, varre o histórico iterando sobre todas as mensagens de todas as conversas. Demora bastante, mas garante um banco local 100% fiel à nuvem.
+### 2.4 Sincronizacao de Periodo Personalizado
+
+Para sincronizar um periodo especifico (ex:ultimos 30 dias com mensagens):
+
 ```bash
-make sync-messages
+uv run python main.py sync --messages-days 30
 ```
 
 ---
 
-## 📊 3. Como Gerar Relatórios
+## 3. Geracao de Relatorios
 
-A geração de relatórios lê os dados do SQLite e constrói a estrutura de pastas e planilhas de Excel. 
+### 3.1 Relatorio Mensal
 
-### A) Relatório Mensal Global
-Gera o relatório do mês especificado para **todos os setores** cadastrados no `business_config.json`.
+Gera o relatorio para um mes calendario completo:
+
 ```bash
-# Gera o relatório de Janeiro de 2025
-make report YEAR=2025 MONTH=1
+# Relatorio de junho de 2026 para todos os setores
+make report YEAR=2026 MONTH=6
+
+# Apenas para um setor especifico
+make report YEAR=2026 MONTH=6 SECTOR="Suporte Tecnico"
 ```
 
-### B) Relatório Mensal Específico por Setor (Ágil)
-Se você precisa enviar com urgência o relatório apenas para a gerência de Suporte, pode filtrar a extração, economizando tempo de processamento.
+### 3.2 Relatorio de Periodo Personalizado
+
+Gera relatorio para datas especificas:
+
 ```bash
-make report YEAR=2026 MONTH=1 SECTOR="Suporte Técnico"
+# Periodo de 25/05 a 26/06
+make report-dates FROM=2026-05-25 TO=2026-06-26
+
+# Com filtro de setor
+make report-dates FROM=2026-05-25 TO=2026-06-26 SECTOR="Comercial"
 ```
-*(Nota: O nome do Setor deve ser idêntico ao grupo cadastrado em `business_config.json` ou `constants.py`).*
 
-### C) Relatório Anual Consolidado
-Para fechamento do ano (Dashboard global somando todos os meses de Janeiro a Dezembro, com aba "Evolução Mensal" contendo gráficos de tendência de Chats, NPS e ART).
+### 3.3 Relatorio Anual
+
+Consolida todo o ano em um unico dashboard com aba de "Evolucao Mensal":
+
 ```bash
-# Gera o relatório anual de 2024
-make annual YEAR=2024
+# Ano inteiro
+make annual YEAR=2026
 
-# Relatório anual filtrado por setor
-make annual YEAR=2024 SECTOR="Suporte Técnico"
+# Filtrado por setor
+make annual YEAR=2026 SECTOR="Suporte Tecnico"
 ```
-A estrutura gerada é idêntica à mensal, mas o dashboard principal recebe o nome `Dashboard_Executivo_ANUAL_2024.xlsx` e inclui uma aba extra `Evolução Mensal` com gráficos de linha mês a mês.
 
-### D) Relatório Total do Sistema
-Gera o dashboard consolidado de **todo o histórico disponível no banco** (sem filtro de data).
+### 3.4 Relatorio Total do Sistema
+
+Gera dashboard de **todo o historico** disponivel no banco:
+
 ```bash
+# Todos os setores
 make total
 
-# Total do sistema filtrado por setor
-make total SECTOR="Comercial"
+# Filtrado
+make total SECTOR="Financeiro"
 ```
-O dashboard principal é salvo em `reports/total/Dashboard_Executivo_TOTAL_SISTEMA.xlsx` com a aba "Evolução Mensal" contendo todos os meses do cache disponível.
 
 ---
 
-## 📁 4. O que é gerado na pasta `reports/`?
+## 4. Estrutura de Saida dos Relatorios
 
-### A) Relatório Mensal (`make report YEAR=2024 MONTH=2`)
+### Relatorio Mensal (`make report YEAR=2026 MONTH=6`)
 
-```text
+```
 reports/
-└── 2024/
-    └── 2024-02/
-        ├── README.md                              <-- Resumo executivo em Markdown
-        ├── Dashboard_Executivo_GLOBAL_2024_02.xlsx <-- Dashboard consolidado (Todos os agentes)
-        ├── Comercial/                             <-- Pasta individualizada do Setor
-        │   ├── Dashboard_Executivo_Comercial_2024_02.xlsx
+└── 2026/
+    └── 2026-06/
+        ├── README.md                              # Resumo executivo
+        ├── Dashboard_Executivo_GLOBAL_2026_06.xlsx # Dashboard consolidado
+        ├── Suporte_Tecnico/
+        │   ├── Dashboard_Executivo_Suporte_Tecnico_2026_06.xlsx
         │   └── auditoria/
-        │       ├── auditoria_contatos.xlsx        <-- Lista de quem chamou no período
-        │       ├── auditoria_os.xlsx              <-- Planilha bruta de Ordens de Serviço
+        │       ├── auditoria_contatos.xlsx
+        │       ├── auditoria_os.xlsx
         │       └── OS/
-        │           ├── OS_10523.pdf               <-- Formulário final em PDF para a OS 10523
-        │           └── OS_10540.pdf
-        └── Suporte_Técnico/
-            ├── Dashboard_Executivo_Suporte_Técnico_2024_02.xlsx
-            └── auditoria/
-                ├── auditoria_contatos.xlsx
-                └── ...
+        │           └── OS_12345.pdf
+        └── Comercial/
+            └── ...
 ```
 
-### B) Relatório Anual (`make annual YEAR=2024`)
+### Relatorio de Periodo Personalizado (`make report-dates FROM=... TO=...`)
 
-```text
+```
 reports/
-└── 2024/
-    ├── README.md                                  <-- Resumo executivo anual
-    ├── Dashboard_Executivo_ANUAL_2024.xlsx          <-- Dashboard anual (5 abas, incl. Evolução Mensal)
-    ├── Comercial/
-    │   ├── Dashboard_Anual_Comercial_2024.xlsx
-    │   └── auditoria/
-    │       ├── auditoria_contatos.xlsx
-    │       ├── auditoria_os.xlsx
-    │       └── OS/
-    │           └── *.pdf
-    └── Suporte_Técnico/
-        └── ...
+└── 20260525_20260626/
+    ├── Dashboard_Executivo_GLOBAL_20260525_20260626.xlsx
+    ├── README.md
+    └── ...
 ```
 
-### C) Relatório Total do Sistema (`make total`)
+### Relatorio Anual (`make annual YEAR=2026`)
 
-```text
+```
+reports/
+└── 2026/
+    ├── Dashboard_Executivo_ANUAL_2026.xlsx  # Inclui aba "Evolucao Mensal"
+    ├── README.md
+    └── ...
+```
+
+### Relatorio Total (`make total`)
+
+```
 reports/
 └── total/
-    ├── README.md                                  <-- Resumo executivo total
-    ├── Dashboard_Executivo_TOTAL_SISTEMA.xlsx       <-- Dashboard total (5 abas, todo o histórico)
-    ├── Comercial/
-    │   ├── Dashboard_Total_Comercial.xlsx
-    │   └── auditoria/
-    └── Suporte_Técnico/
-        └── ...
+    ├── Dashboard_Executivo_TOTAL_SISTEMA.xlsx
+    ├── README.md
+    └── ...
 ```
 
 ---
 
-## 🧑‍💻 5. Uso Avançado via Script (Python CLI)
+## 5. Uso via CLI (Python)
 
-Se o `Makefile` não cobrir sua necessidade de automação, chame o script principal diretamente para ter controle fino sobre os parâmetros:
+Para controle fino, execute comandos diretamente:
 
 ```bash
-# Ative o virtualenv ou use uv run
+# Ver ajuda completa
 uv run python main.py --help
 
-# Ajuda dos parâmetros de sincronização
+# Sincronizacao
 uv run python main.py sync --help
+uv run python main.py sync --messages-days 30
 
-# Ajuda dos parâmetros de relatório total
-uv run python main.py total --help
+# Relatorios
+uv run python main.py report --help
+uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26
+uv run python main.py report --year 2026 --month 6 --sector "Suporte Tecnico"
 
-# Exemplo: Fazer backfill de mensagens de uma janela específica de tempo em um DB de teste
-uv run python main.py sync --full-messages --year 2024 --month 1 --db-path ./test.db
-
-# Gerar relatório total diretamente via CLI
-uv run python main.py total --db-path m_bird.db --config-path config/business_config.json
+# Total
+uv run python main.py total
 ```
 
-> Todos os comandos do `Makefile` usam `uv run python` — não há dependência de caminhos fixos de Python ou virtualenv.
+---
+
+## 6. Dicas
+
+- **Cron Job Recomendado:** Execute `make sync` a cada hora e `make sync-daily` uma vez por dia.
+- **Periodo Personalizado:** Use `make report-dates` quando precisar de um corte de datas que nao segue mes calendario.
+- **Filtro de Setor:** sempre passe `SECTOR="Nome Exato"` para gerar relatorios mais rapidos e direcionados.
+- **Re-sync Seguro:** Todos os comandos de sincronizacao usam UPSERT, podendo ser executados multiplas vezes sem duplicar dados.

@@ -175,7 +175,8 @@ class PDFExporter:
                 pdf.ln(4)
 
                 # Reclamação com Alerta Visual
-                reclamacao = "SIM" if int(row[14] or 0) > 0 else "NÃO"
+                reclamacao_row = row[14] if isinstance(row[14], str) else "Sim" if (row[14] or 0) > 0 else "Não"
+                reclamacao = "SIM" if reclamacao_row == "Sim" else "NÃO"
                 rec_bg = _DANGER_BG if reclamacao == "SIM" else None
                 rec_color = _DANGER_COLOR if reclamacao == "SIM" else None
                 

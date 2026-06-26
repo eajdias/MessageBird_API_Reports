@@ -22,11 +22,13 @@ async def main():
     report_parser = subparsers.add_parser("report", help="Gerar relatórios")
     report_parser.add_argument("--year", type=int, default=datetime.now().year, help="Ano do relatório")
     report_parser.add_argument("--month", type=int, default=None, help="Mês (1-12). Omitir para relatório anual.")
+    report_parser.add_argument("--from-date", type=str, default=None, help="Data inicial (YYYY-MM-DD) para relatório de período personalizado")
+    report_parser.add_argument("--to-date", type=str, default=None, help="Data final (YYYY-MM-DD) para relatório de período personalizado")
     report_parser.add_argument("--output-dir", default="reports", help="Pasta de saída")
     report_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
     report_parser.add_argument("--config-path", default="config/business_config.json", help="Caminho para business_config.json")
     report_parser.add_argument("--skip-os", action="store_true", help="Pular Ordens de Serviço")
-    report_parser.add_argument("--sector", default=None, help="Filtrar por um setor/grupo específico (ex: 'Comercial')")
+    report_parser.add_argument("--sector", default="Suporte Técnico", help="Filtrar por um setor/grupo específico (ex: 'Comercial'). Padrão: Suporte Técnico")
 
     # Total parser
     total_parser = subparsers.add_parser("total", help="Gerar relatório total do sistema (todo o histórico)")
@@ -34,7 +36,7 @@ async def main():
     total_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
     total_parser.add_argument("--config-path", default="config/business_config.json", help="Caminho para business_config.json")
     total_parser.add_argument("--skip-os", action="store_true", help="Pular Ordens de Serviço")
-    total_parser.add_argument("--sector", default=None, help="Filtrar por um setor/grupo específico")
+    total_parser.add_argument("--sector", default="Suporte Técnico", help="Filtrar por um setor/grupo específico. Padrão: Suporte Técnico")
 
     # Sync parser
     sync_parser = subparsers.add_parser("sync", help="Sincronizar banco de dados")
@@ -44,6 +46,7 @@ async def main():
     sync_parser.add_argument("--lookback", type=int, default=60, help="Minutos de retrocesso para sync incremental")
     sync_parser.add_argument("--year", type=int, default=None, help="Ano para backfill mensal")
     sync_parser.add_argument("--month", type=int, default=None, help="Mês para backfill mensal")
+    sync_parser.add_argument("--backfill-surveys", action="store_true", help="Re-extrair NPS e avaliações de conversas existentes")
     sync_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
 
     args = parser.parse_args()
@@ -62,16 +65,37 @@ async def main():
         exporter = ExcelExporter()
         use_case = GenerateReportUseCase(repository, exporter)
 
+        # Validate date range arguments
+        has_from = args.from_date is not None
+        has_to = args.to_date is not None
+        if has_from or has_to:
+            if not has_from or not has_to:
+                terminal.console.print("[bold red]ERRO:[/] Use --from-date e --to-date juntos.")
+                return
+            report_type = "custom_range"
+            period_label = f"{args.from_date} a {args.to_date}"
+        elif args.month:
+            report_type = "monthly"
+            period_label = f"{args.year}-{args.month:02d}"
+        else:
+            report_type = "annual"
+            period_label = str(args.year)
+
         # Run Use Case
         terminal.print_panel(
             f"Iniciando Geração de Relatório Standalone\n"
-            f"Período: {args.year}{f'-{args.month:02d}' if args.month else ''}\n"
+            f"Período: {period_label}\n"
             f"Setor: {args.sector if args.sector else 'Todos'}\n"
             f"DB: {args.db_path}",
             title="Master Report"
         )
-        
-        result = await use_case.execute(args.year, args.month, args.output_dir, args.skip_os, args.sector)
+
+        result = await use_case.execute(
+            args.year, args.month, args.output_dir, args.skip_os, args.sector,
+            report_type=report_type,
+            start_date=args.from_date,
+            end_date=args.to_date,
+        )
         
         if result:
             unmapped_agents, unmapped_depts = result["unmapped"]
@@ -126,6 +150,7 @@ async def main():
             lookback_minutes=args.lookback,
             year=args.year,
             month=args.month,
+            backfill_surveys=args.backfill_surveys,
             db_path=args.db_path
         )
         terminal.console.print(f"[bold green]Resultado:[/] {result}")

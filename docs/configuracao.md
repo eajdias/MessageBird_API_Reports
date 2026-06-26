@@ -1,66 +1,146 @@
-# Configuração Avançada (Standalone)
+# Configuracao
 
-Para garantir que o gerador de relatórios seja 100% independente do projeto principal, todas as suas configurações estão isoladas na pasta `config/`. 
+Guia completo para configurar a ferramenta de relatorios MessageBird.
 
-Esta pasta não é rastreada pelo Git para proteger os dados sensíveis da sua empresa. Antes de rodar a sua primeira sincronização, você precisará configurar dois arquivos:
+---
 
-## 1. O arquivo `.env`
+## 1. Arquivo `.env`
 
-O projeto inclui um template em `config/.env.example` com todas as variáveis necessárias documentadas. Para começar:
+Copia o template e preencha com suas credenciais:
 
 ```bash
 cp config/.env.example config/.env
 ```
 
-Em seguida, edite `config/.env` preenchendo as credenciais da API da MessageBird:
+### Variaveis Obrigatorias
 
-```env
-MESSAGEBIRD_API_KEY_LIVE="sua_chave_live_aqui"
-MESSAGEBIRD_WORKSPACE_ID_LIVE="seu_workspace_id_aqui"
-```
+| Variavel | Descricao | Exemplo |
+|:---------|:----------|:--------|
+| `MESSAGEBIRD_API_KEY_LIVE` | Chave de API da MessageBird | `live_xxxxx` |
+| `MESSAGEBIRD_WORKSPACE_ID_LIVE` | ID do workspace | `workspace-abc` |
 
-**(Opcional):** Você também pode mapear IDs fixos para o nome de certos Agentes. Isso resolve casos em que a API da MessageBird não consiga popular o nome adequadamente na tabela.
-```env
-MESSAGEBIRD_AGENT_1="cb13645b-d36c-48be-8f35-xxxx:Agente Exemplo A"
-MESSAGEBIRD_AGENT_2="cb13645b-d36c-48be-8f35-yyyy:Agente Exemplo B"
-```
+### Variaveis Opcionais
 
-## 2. O arquivo `business_config.json`
+| Variavel | Padrao | Descricao |
+|:---------|:-------|:----------|
+| `MESSAGEBIRD_ENV` | `live` | Ambiente (`live`, `test`, `production`) |
+| `MESSAGEBIRD_DB_FILENAME` | `m_bird.db` | Nome do arquivo do banco |
+| `MESSAGEBIRD_RESULT_LIMIT` | `20` | Itens por pagina na API |
+| `MESSAGEBIRD_HTTP_TIMEOUT` | `30.0` | Timeout das requisicoes (segundos) |
+| `MESSAGEBIRD_TIMEZONE_OFFSET` | `-3` | Offset do fuso horario (UTC) |
+| `MESSAGEBIRD_LOG_LEVEL` | `INFO` | Nivel de log |
 
-O arquivo `business_config.json` (também dentro de `config/`) é o coração do motor de relatórios. É através dele que o sistema sabe como transformar dados brutos (ex: `cnvs_dept = 1`) em relatórios compreensíveis (ex: "Departamento de Suporte Técnico").
+### Configuracao de SLA
 
-Exemplo da estrutura que deve ser criada em `config/business_config.json`:
+| Variavel | Padrao | Descricao |
+|:---------|:-------|:----------|
+| `MESSAGEBIRD_SLA_FR_SECONDS` | `300` | Tempo maximo para primeira resposta (segundos) |
+| `MESSAGEBIRD_SLA_RES_HOURS` | `24` | Tempo maximo para resolucao (horas) |
+| `MESSAGEBIRD_SLA_MAX_MSGS` | `50` | Limite maximo de mensagens por conversa |
+
+---
+
+## 2. Arquivo `business_config.json`
+
+E o "coracao" da configuracao de relatorios. Define como dados brutos se tornam informacoes compreensiveis.
+
+### Estrutura Completa
 
 ```json
 {
-  "DEPT_MAP": {
-    "1": "Suporte Técnico",
-    "2": "Comercial",
-    "3": "Financeiro",
-    "4": "Ouvidoria",
-    "5": "Customer Success"
-  },
-  "AGENT_GROUPS": {
-    "Suporte Técnico": [
-      "Agente Exemplo A",
-      "Agente Exemplo B",
-      "Agente Exemplo C"
-    ],
-    "Comercial": [
-      "Consultor Exemplo A",
-      "Consultor Exemplo B"
-    ],
-    "Internacional": [
-      "Representante Exemplo A"
-    ]
-  }
+    "SYSTEM_MAP": {
+        "1": "NOME_DO_SISTEMA_A",
+        "2": "NOME_DO_SISTEMA_B"
+    },
+    "DEPT_MAP": {
+        "1": "Suporte Tecnico",
+        "2": "Comercial",
+        "3": "Financeiro",
+        "4": "Ouvidoria",
+        "5": "Nova Instalacao | Migracao"
+    },
+    "REASON_MAP": {
+        "1": {
+            "1": "Motivo A",
+            "2": "Motivo B"
+        },
+        "2": {
+            "1": "Motivo C"
+        }
+    },
+    "OCCURRENCE_MAP": {
+        "2": {
+            "1": {
+                "1": "Ocorrencia X",
+                "2": "Ocorrencia Y"
+            }
+        }
+    },
+    "LANG_MAP": {
+        "1": "Portugues",
+        "2": "English",
+        "3": "Espanol"
+    },
+    "AGENTS": {
+        "bird_id_do_agente": {
+            "name": "Nome do Agente",
+            "group": "Nome do Grupo"
+        }
+    }
 }
 ```
 
-### Por que mapear os Setores (`AGENT_GROUPS`)?
-Ao criar a divisão `AGENT_GROUPS`, você habilita o comando `--sector` no terminal.
-Por exemplo, ao configurar o grupo "Comercial" acima, você poderá gerar os relatórios apenas para os agentes daquela lista, economizando tempo de extração:
+### Descricao de Cada Campo
 
-```bash
-make report YEAR=2024 MONTH=5 SECTOR="Comercial"
+#### `SYSTEM_MAP`
+Mapeia IDs de sistemas/softwares para nomes legiveis.
+
+#### `DEPT_MAP`
+Mapeia IDs de departamentos para nomes. Usado na triagem automatica (bot).
+
+#### `REASON_MAP`
+Mapeia motivos de contato por departamento. Estrutura aninhada: `departamento -> motivo_id -> nome`.
+
+#### `OCCURRENCE_MAP`
+Mapeia ocorrencias por departamento e motivo. Estrutura: `departamento -> motivo -> ocorrencia_id -> nome`.
+
+#### `LANG_MAP`
+Mapeia idiomas para nomes.
+
+#### `AGENTS`
+Mapeia agentes MessageBird para nomes e grupos. Cada entrada tem:
+- **Chave**: ID do agente no MessageBird (`bird_id`)
+- **name**: Nome exibido nos relatorios
+- **group**: Grupo organizacional (define a pasta de saida)
+
+### Como Configurar os Grupos de Agentes
+
+O campo `group` em `AGENTS` define como os agentes sao agrupados nos relatorios. Agentes com o mesmo `group` aparecem na mesma pasta e dashboard.
+
+Exemplo:
+```json
+"AGENTS": {
+    "abc-123": { "name": "Joao Silva", "group": "Suporte Tecnico" },
+    "def-456": { "name": "Maria Santos", "group": "Suporte Tecnico" },
+    "ghi-789": { "name": "Pedro Costa", "group": "Comercial" }
+}
 ```
+
+Isso gera:
+```
+reports/
+├── Suporte_Tecnico/
+│   └── Dashboard_Executivo_Suporte_Tecnico.xlsx
+└── Comercial/
+    └── Dashboard_Executivo_Comercial.xlsx
+```
+
+---
+
+## 3. Como Atualizar a Configuracao
+
+1. Edite `config/business_config.json`
+2. Nao e necessario reiniciar nada
+3. As mudancas refletem na proxima geracao de relatorio
+
+> **Dica:** Agentes novos ja sao automaticamente criados no banco durante a sincronizacao. Basta adicionar o `bird_id` e `group` no `business_config.json` para que aparecam no relatorio correto.

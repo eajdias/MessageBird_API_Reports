@@ -1,76 +1,141 @@
-# Guia de Arquitetura e Padrões de Desenvolvimento (Omnichannel MCP)
+# Arquitetura e Padroes de Desenvolvimento
 
-Este documento estabelece as diretrizes fundamentais para o desenvolvimento e manutenção do projeto, integrando princípios de **Clean Architecture**, **Context7 Recommendations** e padrões **SOLID**.
+Este documento estabelece as diretrizes para desenvolvimento e manutencao do projeto, seguindo Clean Architecture e padroes SOLID.
 
 ---
 
-## 1. Princípios de Engenharia (Core Mandates)
+## 1. Principios Fundamentais
 
-O desenvolvimento deve ser regido rigorosamente pelos seguintes princípios:
-
-| Princípio | Descrição e Aplicação no Projeto |
-| :--- | :--- |
-| **Clean Architecture** | Separação estrita entre regras de negócio (Domain/Application) e detalhes técnicos (Infrastructure/Presentation). |
-| **SOLID** | **SRP**: Classes com responsabilidade única. **OCP**: Aberto para extensão, fechado para modificação. **LSP/ISP/DIP**: Interfaces claras e inversão de dependência. |
-| **DRY (Don't Repeat Yourself)** | Lógicas de cálculo de métricas e conversão de datas devem residir em um único local no Domínio. |
-| **KISS (Keep It Simple, Stupid)** | Evitar abstrações excessivas. Preferir soluções legíveis e diretas. |
-| **YAGNI (You Ain't Gonna Need It)** | Implementar apenas o necessário para os requisitos atuais. Evitar "future-proofing" especulativo. |
-| **SoC (Segregation of Concerns)** | A camada de aplicação não deve saber da existência de bibliotecas como `xlsxwriter` ou `aiosqlite`. |
+| Principo | Aplicacao no Projeto |
+|:---------|:---------------------|
+| **Clean Architecture** | Separacao estrita entre regras de negocio (Domain/Application) e detalhes tecnicos (Infrastructure/Presentation) |
+| **SOLID** | SRP: classes com responsabilidade unica. OCP: aberto para extensao, fechado para modificacao. DIP: dependencias via interfaces |
+| **DRY** | Liguas de calculo e conversao de datas em um unico local no Dominio |
+| **KISS** | Abstracoes minimas, solucoes legiveis e diretas |
 
 ---
 
 ## 2. Estrutura de Camadas
 
-O projeto é organizado radialmente, onde as dependências apontam sempre para o centro (Domínio).
+As dependencias apontam sempre para o centro (Dominio).
 
-### 2.1 Camada de Domínio (`domain/`)
-*   **Entities:** Modelos de dados puros (`dataclasses`). Ex: `RawConversationData`, `ProcessedReportData`.
-*   **Services:** Lógica matemática e regras de negócio puras. Ex: `MetricsCalculator`.
-*   **Logic:** Funções utilitárias canônicas para tempo e conversões.
-*   **Constants:** Definições de negócio (Headers, SLAs, Mapas de Departamento).
-*   **Rigor:** **ZERO** dependências externas. Apenas Python standard library.
+### 2.1 Camada de Dominio (`domain/`)
 
-### 2.2 Camada de Aplicação (`application/`)
-*   **Use Cases:** Orquestradores de fluxo. Não contêm lógica de cálculo, apenas chamam o Domínio e Infraestrutura.
-*   **Services:** Agregadores e transformadores de dados. Devem usar **Composição** para evitar "God Classes".
-*   **Interfaces:** Contratos (Abstract Base Classes) para repositórios e exportadores.
-*   **Rigor:** Depende apenas do Domínio e das Interfaces.
+Responsavel por toda a logica de negocio pura, sem dependencias externas.
+
+```
+domain/
+├── constants.py          # SLAs, headers, mapas de departamento
+├── logic.py              # Funcoes de tempo e conversao
+├── entities/
+│   └── report_data.py    # Dataclasses (RawConversationData, etc.)
+├── strategies/
+│   └── metrics_strategy.py  # Interface para calculos de metricas
+├── metrics/
+│   ├── frt.py            # First Response Time
+│   ├── art.py            # Average Response Time
+│   └── duration.py       # Duracao do atendimento
+└── services/
+    └── metrics_calculator.py  # NPS, SLA, medias
+```
+
+**Regra:** ZERO dependencias externas. Apenas Python standard library.
+
+### 2.2 Camada de Aplicacao (`application/`)
+
+Orquestracao de fluxos e transformacao de dados.
+
+```
+application/
+├── interfaces/
+│   ├── repository.py     # ABC para repositorios
+│   └── exporter.py       # ABC para exportadores
+├── use_cases/
+│   ├── sync_database.py  # Sincronizacao com API
+│   └── generate_report.py # Geracao de relatorios
+└── services/
+    ├── report_aggregator.py  # Agregacao de metricas
+    ├── sub_aggregators.py    # Agregadores temporais, por topico
+    └── auditoria_*.py        # Servicos de auditoria
+```
+
+**Regra:** Depende apenas do Dominio e das Interfaces.
 
 ### 2.3 Camada de Infraestrutura (`infrastructure/`)
-*   **Database:** Implementações específicas de persistência (`sqlite_repository.py`).
-*   **Exporters:** Implementações de saída (Excel, PDF, Markdown).
-*   **Rigor:** Onde os frameworks e bibliotecas externas vivem. Nenhuma lógica de negócio deve ser "vazada" para cá.
 
-### 2.4 Camada de Apresentação (`presentation/`)
-*   **Tools:** Implementação das ferramentas MCP (Model Context Protocol).
-*   **CLI:** Scripts de execução direta.
+Implementacoes tecnicas e integracao com APIs externas.
+
+```
+infrastructure/
+├── api/
+│   ├── client.py         # Cliente HTTP (httpx)
+│   ├── config.py         # Configuracoes da API
+│   └── sync.py           # Sincronizacao com MessageBird
+├── database/
+│   ├── init_db.py        # Schema SQLite
+│   ├── connection.py     # Conexao read-only
+│   ├── sync_connection.py # Conexao write (WAL)
+│   ├── sqlite_repository.py # Implementacao do repositorio
+│   └── queries.py        # Consultas SQL
+├── exporters/
+│   ├── excel_exporter.py # Exportacao Excel (xlsxwriter)
+│   ├── pdf_exporter.py   # Exportacao PDF (fpdf2)
+│   └── markdown_exporter.py # Exportacao README.md
+└── config_loader.py      # Leitura do business_config.json
+```
+
+**Regra:** Onde frameworks e bibliotecas externas vivem. Nenhuma logica de negocio deve vazar para ca.
+
+### 2.4 Camada de Apresentacao (`presentation/`)
+
+```
+presentation/
+└── terminal.py           # Interface CLI (rich)
+```
+
+---
+
+## 3. Padrões de Implementacao
+
+### Tratamento de Datas e Timezones
+
+1. **UTC no Banco:** Todos os dados armazenados em UTC
+2. **Local no Relatorio:** Conversao para fuso local (UTC-3) apenas na exibicao final, em `domain/logic.py`
+
+### Evitando God Classes
+
+1. **Dividir:** Se uma classe de servico crescer demais, fragmentar em estrategias (ex: `HeatmapStrategy`, `SLAStrategy`)
+2. **Injecao de Dependencia:** Sempre passar dependencias via construtor
+
+### Exportadores
+
+1. **DTOs:** Usar objetos simples (`DashboardDTO`) para transferir dados entre Aplicacao e Exportadores
+2. **Formatadores Isolados:** Logica de formatacao visual fica dentro do exporter, nunca no aggregator
 
 ---
 
-## 3. Padrões de Implementação Recomendados (Context7)
+## 4. Checklist para Novos Recursos
 
-### A. Evitando "God Classes"
-Ao expandir os relatórios ou o sincronizador:
-1.  **Divide and Conquer:** Se uma classe de serviço atingir muitos métodos de agregação, fragmente-a em pequenas estratégias (ex: `HeatmapStrategy`, `SLAStrategy`).
-2.  **Injeção de Dependência:** Sempre passe dependências via construtor para facilitar testes e substituições.
-
-### B. Tratamento de Datas e Timezones
-1.  **UTC no Banco:** Dados em repouso devem estar em UTC.
-2.  **Local no Relatório:** A conversão para o Timezone local (Offset -3) deve ocorrer apenas na camada de Domínio (`logic.py`) ou no momento da exibição final.
-
-### C. Evolução de Relatórios
-1.  **DTOs (Data Transfer Objects):** Use objetos simples para transferir dados entre a Aplicação e os Exporters.
-2.  **Formatadores Isolados:** A lógica de "como pintar uma célula de vermelho" deve estar dentro do `ExcelExporter` e nunca no `ReportAggregator`.
+- [ ] Logica de calculo esta em `domain/services/`?
+- [ ] Novo metodo no repositorio retorna dados crus ou entidades de dominio?
+- [ ] O Use Case esta orquestrando (não calculando)?
+- [ ] Existem testes unitarios para a nova logica?
+- [ ] DRY foi respeitado?
 
 ---
 
-## 4. Checklist de Novos Recursos
+## 5. Comandos de Desenvolvimento
 
-- [ ] A lógica de cálculo está no `domain/services/`?
-- [ ] O novo método no repositório retorna dados crus ou entidades de domínio?
-- [ ] O Use Case está orquestrando ou calculando? (Deve apenas orquestrar).
-- [ ] Existem testes unitários para a nova lógica de domínio?
-- [ ] O princípio DRY foi respeitado na manipulação dos novos dados?
+```bash
+# Instalar dependencias
+make install
 
----
-*Este guia é um documento vivo e deve ser atualizado conforme a arquitetura evolui.*
+# Rodar testes
+uv run pytest tests/
+
+# Sincronizar dados de teste
+uv run python main.py sync --year 2026 --month 6 --db-path test.db
+
+# Gerar relatorio de teste
+uv run python main.py report --year 2026 --month 6 --db-path test.db
+```
