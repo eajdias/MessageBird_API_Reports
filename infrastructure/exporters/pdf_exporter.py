@@ -144,15 +144,15 @@ class PDFExporter:
 
                 # 2. Dados do Cliente
                 pdf._section("Dados do Cliente")
-                pdf._row("Cliente:", _val(row[4]))
-                pdf._two_cols("E-mail:", _val(row[6]), "Telefone:", _val(row[5]))
-                # ID BD is row[17] (cnvs_id), Documento is row[7]
-                pdf._two_cols("Documento:", _val(row[7]), "ID BD:", _val(row[17]))
+                pdf._row("Cliente:", _val(row[3]))
+                pdf._row("Telefone:", _val(row[4]))
+                # Documento is row[5] (cnvs_tax_id), ID BD is row[15] (cnvs_id)
+                pdf._two_cols("Documento:", _val(row[5]), "ID BD:", _val(row[15]))
                 pdf.ln(4)
 
                 # 3. Equipamento ou Sistema
                 pdf._section("Equipamento / Sistema")
-                sistema = _val(row[8])
+                sistema = _val(row[6])
                 # Redundancy fix: if we only have one field for system/product, 
                 # keep product as N/A to avoid repeating the same value.
                 produto = "N/A"
@@ -161,9 +161,9 @@ class PDFExporter:
 
                 # 4. Detalhamento dos Defeitos
                 pdf._section("Detalhamento do Atendimento")
-                pdf._two_cols("Motivo:", _val(row[10]), "Ocorrência:", _val(row[11]))
+                pdf._two_cols("Motivo:", _val(row[8]), "Ocorrência:", _val(row[9]))
 
-                desc = str(row[15])
+                desc = str(row[13])
                 if not desc.strip(): desc = "Sem descrição detalhada."
                 if len(desc) > 800: desc = desc[:797] + "..."
                 
@@ -175,7 +175,7 @@ class PDFExporter:
                 pdf.ln(4)
 
                 # Reclamação com Alerta Visual
-                reclamacao_row = row[14] if isinstance(row[14], str) else "Sim" if (row[14] or 0) > 0 else "Não"
+                reclamacao_row = row[12] if isinstance(row[12], str) else "Sim" if (row[12] or 0) > 0 else "Não"
                 reclamacao = "SIM" if reclamacao_row == "Sim" else "NÃO"
                 rec_bg = _DANGER_BG if reclamacao == "SIM" else None
                 rec_color = _DANGER_COLOR if reclamacao == "SIM" else None
@@ -188,7 +188,7 @@ class PDFExporter:
                 pdf._section("Métricas e Análise (GP/GQ)")
                 
                 # Formatação Condicional NPS
-                nps_val = _val(row[13])
+                nps_val = _val(row[11])
                 nps_color = None
                 try:
                     nps_int = int(nps_val)
@@ -199,9 +199,9 @@ class PDFExporter:
                 except:
                     pass
                 
-                pdf._two_cols("Nota do Técnico:", _val(row[12]), "Nota NPS:", nps_val, v2_color=nps_color)
-                pdf._two_cols("Agente:", _val(row[2]), "Departamento:", _val(row[9]))
-                pdf._two_cols("Data Início:", _val(row[1]), "Duração (min):", _val(row[16]))
+                pdf._two_cols("Nota do Técnico:", _val(row[10]), "Nota NPS:", nps_val, v2_color=nps_color)
+                pdf._two_cols("Agente:", _val(row[2]), "Departamento:", _val(row[7]))
+                pdf._two_cols("Data Início:", _val(row[1]), "Duração (min):", _val(row[14]))
                 pdf._row("Abrir Ação Corretiva:", "NÃO")
 
                 pdf.output(pdf_path)
