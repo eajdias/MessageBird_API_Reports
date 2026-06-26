@@ -34,6 +34,7 @@ class ReportAggregator:
         return ProcessedReportData(
             conversation_id=raw_data.id,
             agent=raw_data.metadata.get("agent_name", "Unknown"),
+            contact_id=raw_data.contact_id,
             frt_min=results.get("FRTCalculator"),
             duration_min=results.get("DurationCalculator"),
             art_min=results.get("ARTCalculator"),
@@ -69,7 +70,10 @@ class ReportAggregator:
         negatives = sum(1 for p in processed_data if p.is_negative)
         total_ratings = len(ratings)
         
-        contacts = Counter(p.phone for p in processed_data if p.phone)
+        # Count unique contacts and returners (contacts with >1 chat)
+        contacts = Counter(p.contact_id for p in processed_data if p.contact_id)
+        unique_clients = len(contacts)
+        returners = sum(1 for count in contacts.values() if count > 1)
         
         return {
             "avg_rating": MetricsCalculator.calculate_rating_average(ratings),
@@ -84,8 +88,8 @@ class ReportAggregator:
             "negatives": negatives,
             "pct_compliments": round(compliments / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
             "pct_negatives": round(negatives / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
-            "unique_clients": len(contacts),
-            "returners": len(processed_data) - len(contacts)
+            "unique_clients": unique_clients,
+            "returners": returners
         }
 
     def aggregate_dashboard(self, data: List[ProcessedReportData], title: str, start_date: str, end_date: str, prev_month_metrics: Dict[str, Any] = None) -> DashboardDTO:

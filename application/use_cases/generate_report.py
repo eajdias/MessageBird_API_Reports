@@ -1,6 +1,7 @@
 import os
 import asyncio
 import calendar
+import logging
 from collections import defaultdict
 from typing import Optional, List, Any, Dict
 from application.interfaces.repository import ReportRepository
@@ -15,6 +16,8 @@ from domain.metrics.art import ARTCalculator
 from domain.entities.report_data import RawConversationData
 from domain import constants
 
+logger = logging.getLogger("standalone.generate_report")
+
 class GenerateReportUseCase:
     def __init__(self, repository: ReportRepository, exporter: ReportExporter):
         self.repository = repository
@@ -27,6 +30,21 @@ class GenerateReportUseCase:
         ])
         self.auditoria_contatos_service = AuditoriaContatosService(repository)
         self.auditoria_os_service = AuditoriaOSService(repository)
+
+    async def _fetch_os_messages(self, os_data: List[List[Any]]) -> Dict[int, List[Dict[str, Any]]]:
+        """Fetch messages for all conversations in OS data."""
+        messages_dict = {}
+        for row in os_data:
+            cnvs_id = row[15]  # ID BD
+            if cnvs_id and cnvs_id not in messages_dict:
+                try:
+                    messages = await self.repository.fetch_messages_by_conversation(cnvs_id)
+                    # Convert sqlite3.Row objects to dictionaries
+                    messages_dict[cnvs_id] = [dict(msg) for msg in messages]
+                except Exception as e:
+                    logger.error(f"Error fetching messages for conversation {cnvs_id}: {e}")
+                    messages_dict[cnvs_id] = []
+        return messages_dict
 
     async def execute(self, year: int, month: Optional[int], output_dir: str, skip_os: bool = False, sector: Optional[str] = None, report_type: str = "monthly", start_date: Optional[str] = None, end_date: Optional[str] = None):
         if report_type == "total":
@@ -109,7 +127,8 @@ class GenerateReportUseCase:
                 if os_header: 
                     self.exporter.export_excel(os.path.join(auditoria_dir, "auditoria_os.xlsx"), os_header, os_data, "Ordens de Serviço")
                     from infrastructure.exporters.pdf_exporter import PDFExporter
-                    PDFExporter().export_os_pdfs(os.path.join(auditoria_dir, "OS"), os_header, os_data)
+                    messages_dict = await self._fetch_os_messages(os_data)
+                    PDFExporter().export_os_pdfs(os.path.join(auditoria_dir, "OS"), os_header, os_data, messages_dict)
             
         await asyncio.gather(*(process_group(g) for g in groups))
 
@@ -235,8 +254,9 @@ class GenerateReportUseCase:
                     self.exporter.export_excel(os.path.join(auditoria_dir, "auditoria_os.xlsx"),
                                                os_header, os_data, "Ordens de Serviço")
                     from infrastructure.exporters.pdf_exporter import PDFExporter
+                    messages_dict = await self._fetch_os_messages(os_data)
                     PDFExporter().export_os_pdfs(os.path.join(auditoria_dir, "OS"),
-                                                  os_header, os_data)
+                                                  os_header, os_data, messages_dict)
 
         await asyncio.gather(*(process_group(g) for g in groups))
 
@@ -338,8 +358,9 @@ class GenerateReportUseCase:
                     self.exporter.export_excel(os.path.join(auditoria_dir, "auditoria_os.xlsx"),
                                                os_header, os_data, "Ordens de Serviço")
                     from infrastructure.exporters.pdf_exporter import PDFExporter
+                    messages_dict = await self._fetch_os_messages(os_data)
                     PDFExporter().export_os_pdfs(os.path.join(auditoria_dir, "OS"),
-                                                  os_header, os_data)
+                                                  os_header, os_data, messages_dict)
 
         await asyncio.gather(*(process_group(g) for g in groups))
 

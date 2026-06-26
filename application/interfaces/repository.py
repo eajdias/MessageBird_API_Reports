@@ -58,3 +58,7 @@ class ReportRepository(ABC):
     @abstractmethod
     async def fetch_auditoria_os_raw_all(self) -> List[Dict[str, Any]]:
         pass
+
+    @abstractmethod
+    async def fetch_messages_by_conversation(self, conversation_id: int) -> List[Dict[str, Any]]:
+        pass

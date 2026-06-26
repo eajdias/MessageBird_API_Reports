@@ -26,6 +26,7 @@ SURVEY_DATA_METADATA_QUERY = """
     SELECT
         ca.agnt_name as conversation_agent_name,
         ma.agnt_name as message_agent_name,
+        c.cnts_id,
         c.cnts_name,
         c.cnts_phone,
         cv.cnvs_id,
@@ -68,6 +69,23 @@ ALL_MSGS_RANGE_QUERY = """
     JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
     LEFT JOIN agents a ON m.msgs_agnt = a.agnt_id
     WHERE datetime(m.msgs_created) BETWEEN ? AND ?
+    ORDER BY m.msgs_created ASC
+"""
+
+MESSAGES_BY_CONVERSATION_QUERY = """
+    SELECT
+        m.msgs_created,
+        m.msgs_content,
+        m.msgs_direction,
+        m.msgs_type,
+        a.agnt_name,
+        c.cnts_name
+    FROM messages m
+    JOIN conversations cv ON m.msgs_cnvs = cv.cnvs_id
+    JOIN contacts c ON cv.cnvs_cnts = c.cnts_id
+    LEFT JOIN agents a ON m.msgs_agnt = a.agnt_id
+    WHERE m.msgs_cnvs = ?
+      AND m.msgs_type = 'text'
     ORDER BY m.msgs_created ASC
 """
 
@@ -119,6 +137,7 @@ SURVEY_DATA_METADATA_QUERY_ALL = """
     SELECT
         ca.agnt_name as conversation_agent_name,
         ma.agnt_name as message_agent_name,
+        c.cnts_id,
         c.cnts_name,
         c.cnts_phone,
         cv.cnvs_id,

@@ -38,6 +38,7 @@ class SqliteReportRepository(ReportRepository):
                     id=cid,
                     contact=r["cnts_name"] or "Unknown",
                     phone=r["cnts_phone"] or "",
+                    contact_id=r["cnts_id"] or 0,
                     start_time=logic.format_local_dt(r["cnvs_created"]),
                     end_time=logic.format_local_dt(r["cnvs_updated"]),
                     queue_time=logic.get_effective_start_time(raw_msgs, r["cnvs_created"]),
@@ -183,3 +184,6 @@ class SqliteReportRepository(ReportRepository):
 
     async def fetch_auditoria_os_raw_all(self) -> List[Dict[str, Any]]:
         return await self.db.fetch_all(queries.OS_DATA_QUERY_ALL)
+
+    async def fetch_messages_by_conversation(self, conversation_id: int) -> List[Dict[str, Any]]:
+        return await self.db.fetch_all(queries.MESSAGES_BY_CONVERSATION_QUERY, (conversation_id,))

@@ -14,11 +14,12 @@ class RawConversationData:
     id: str
     contact: str
     phone: str
-    start_time: str
-    end_time: str
-    queue_time: Optional[str]
-    raw_created: str
-    raw_updated: str
+    contact_id: int = 0
+    start_time: str = ""
+    end_time: str = ""
+    queue_time: Optional[str] = None
+    raw_created: str = ""
+    raw_updated: str = ""
     msgs: List[RawMessageData] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     rating: Optional[float] = None
@@ -31,6 +32,7 @@ class RawConversationData:
 class ProcessedReportData:
     conversation_id: str
     agent: str
+    contact_id: int = 0
     frt_min: Optional[float] = None
     art_min: Optional[float] = None
     duration_min: Optional[float] = None

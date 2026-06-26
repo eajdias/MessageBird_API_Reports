@@ -259,9 +259,6 @@ class ExcelExporter(ReportExporter):
         table_num_fmt = workbook.add_format({"border": 1, "font_size": 11, "align": "center", "valign": "vcenter"})
         table_alt_num_fmt = workbook.add_format({"border": 1, "bg_color": COLOR_SURFACE, "font_size": 11, "align": "center", "valign": "vcenter"})
 
-        rank_gold_fmt = workbook.add_format({"bold": True, "font_size": 11, "font_color": "#B8860B"})
-        rank_bot_fmt = workbook.add_format({"font_size": 11, "font_color": COLOR_ALERT})
-
         # ── Título + Período ─────────────────────────────────────────────────
         ws.merge_range(0, 0, 0, 14, dto.title, title_fmt)
         ws.merge_range(1, 0, 1, 14, f"Período: {dto.start_date} até {dto.end_date}", subtitle_fmt)
@@ -306,85 +303,37 @@ class ExcelExporter(ReportExporter):
                 })
                 ws.merge_range(6, col_start, 6, col_start + 2, f"vs mês anterior: {trend_text}", trend_fmt)
 
-        # ── Seção: Ranking Rápido ────────────────────────────────────────────
-        ranking_start = 7
-        ws.merge_range(ranking_start, 0, ranking_start, 9, "RANKING DE DESTAQUES", section_fmt)
-        ranking_start += 1
-
-        agent_rows = [
-            r for r in (dto.tabular_data or [])
-            if r[2] != "TOTAIS"
-        ]
-
-        rank_header = ["Posição", "Agente", "Grupo", "NPS Real", "ART (min)", "SLA %", "Chats"]
-        for j, h in enumerate(rank_header):
-            ws.write(ranking_start, j, h, table_header_fmt)
-
-        def _none_safe(v, default=0):
-            return v if isinstance(v, (int, float)) else default
-
-        by_nps = sorted(
-            [r for r in agent_rows if r[13] is not None and isinstance(r[13], (int, float))],
-            key=lambda r: r[13], reverse=True
-        )
-        by_art = sorted(
-            [r for r in agent_rows if r[14] is not None and isinstance(r[14], (int, float))],
-            key=lambda r: r[14], reverse=True
-        )
-
-        rank_labels = ["🥇", "🥈", "🥉"]
-        rank_row = ranking_start + 1
-
-        ws.merge_range(rank_row, 0, rank_row, 6, "Top 3 — Melhor NPS", workbook.add_format({"bold": True, "font_size": 11, "font_color": COLOR_ACCENT}))
-        rank_row += 1
-        for idx in range(min(3, len(by_nps))):
-            r = by_nps[idx]
-            ws.write(rank_row, 0, rank_labels[idx] if idx < 3 else f"#{idx+1}", rank_gold_fmt)
-            ws.write(rank_row, 1, r[2], table_cell_fmt)
-            ws.write(rank_row, 2, r[1], table_cell_fmt)
-            ws.write(rank_row, 3, _none_safe(r[13], "-"), table_num_fmt)
-            ws.write(rank_row, 4, _none_safe(r[14]), table_num_fmt)
-            ws.write(rank_row, 5, _none_safe(r[15]), table_num_fmt)
-            ws.write(rank_row, 6, r[3], table_num_fmt)
-            rank_row += 1
-
-        rank_row += 1
-        ws.merge_range(rank_row, 0, rank_row, 6, "Bottom 3 — Maior ART (precisa atenção)", workbook.add_format({"bold": True, "font_size": 11, "font_color": COLOR_ALERT}))
-        rank_row += 1
-        for idx in range(min(3, len(by_art))):
-            r = by_art[idx]
-            ws.write(rank_row, 0, f"#{idx+1}", rank_bot_fmt)
-            ws.write(rank_row, 1, r[2], table_cell_fmt)
-            ws.write(rank_row, 2, r[1], table_cell_fmt)
-            ws.write(rank_row, 3, _none_safe(r[13], "-"), table_num_fmt)
-            ws.write(rank_row, 4, _none_safe(r[14]), table_num_fmt)
-            ws.write(rank_row, 5, _none_safe(r[15]), table_num_fmt)
-            ws.write(rank_row, 6, r[3], table_num_fmt)
-            rank_row += 1
-
         # ── Seção: Distribuição por Departamento ─────────────────────────────
-        dept_start = rank_row + 1
+        dept_start = 8
         ws.merge_range(dept_start, 0, dept_start, 5, "DISTRIBUIÇÃO POR DEPARTAMENTO", section_fmt)
         dept_start += 1
 
-        dept_header = ["Departamento", "Chats", "% Total", "ART Médio (min)", "SLA %", "Retornantes"]
+        dept_header = ["Departamento", "Chats", "% Total", "ART Médio (min)", "SLA %", "Retornantes", "% Retornantes"]
         for j, h in enumerate(dept_header):
             ws.write(dept_start, j, h, table_header_fmt)
 
         dept_data = dto.department_data or []
         dept_data.sort(key=lambda r: r[1] if isinstance(r[1], (int, float)) else 0, reverse=True)
 
+        pct_ret_fmt = workbook.add_format({"border": 1, "font_size": 11, "align": "center", "valign": "vcenter", "num_format": "0.0%"})
+        pct_ret_alt_fmt = workbook.add_format({"border": 1, "bg_color": COLOR_SURFACE, "font_size": 11, "align": "center", "valign": "vcenter", "num_format": "0.0%"})
+
         for idx, row_data in enumerate(dept_data):
             r = dept_start + 1 + idx
             is_alt = idx % 2 == 0
             c_fmt = table_alt_fmt if is_alt else table_cell_fmt
             n_fmt = table_alt_num_fmt if is_alt else table_num_fmt
+            p_fmt = pct_ret_alt_fmt if is_alt else pct_ret_fmt
             ws.write(r, 0, row_data[0], c_fmt)
             ws.write(r, 1, row_data[1], n_fmt)
             ws.write(r, 2, row_data[2], n_fmt)
             ws.write(r, 3, row_data[4], n_fmt)
             ws.write(r, 4, row_data[5], n_fmt)
             ws.write(r, 5, row_data[11], n_fmt)
+            total_chats_dept = row_data[1] if isinstance(row_data[1], (int, float)) else 0
+            returners_dept = row_data[11] if isinstance(row_data[11], (int, float)) else 0
+            pct_ret = returners_dept / total_chats_dept if total_chats_dept > 0 else 0
+            ws.write(r, 6, pct_ret, p_fmt)
 
         dept_end = dept_start + 1 + len(dept_data)
 
@@ -392,7 +341,10 @@ class ExcelExporter(ReportExporter):
         data_sheet = workbook.add_worksheet("_data_dash")
         data_sheet.hide()
 
-        # NPS Distribution → Pie (professional colors)
+        chart_title_font = {"bold": True, "size": 13, "color": COLOR_PRIMARY}
+        chart_label_font = {"bold": True, "size": 10, "color": COLOR_TEXT}
+
+        # NPS Distribution → Donut (professional colors)
         data_sheet.write(0, 0, "NPS Category")
         data_sheet.write(0, 1, "Count")
         nps_order = {"promoters": "Promotores", "passives": "Neutros", "detractors": "Detratores"}
@@ -402,7 +354,7 @@ class ExcelExporter(ReportExporter):
             data_sheet.write(row_idx, 1, dto.nps_distribution.get(key, 0))
             row_idx += 1
 
-        chart_nps = workbook.add_chart({"type": "pie"})
+        chart_nps = workbook.add_chart({"type": "doughnut"})
         chart_nps.add_series({
             "name": "NPS",
             "categories": "='_data_dash'!$A$2:$A$4",
@@ -415,15 +367,15 @@ class ExcelExporter(ReportExporter):
             "data_labels": {
                 "percentage": True, "category": True,
                 "position": "outside_end", "leader_lines": True,
-                "font": {"bold": True, "size": 10, "color": COLOR_TEXT}
+                "font": {"bold": True, "size": 11, "color": COLOR_TEXT}
             }
         })
-        chart_nps.set_title({"name": "Distribuição NPS", "name_font": {"bold": True, "size": 12, "color": COLOR_PRIMARY}})
-        chart_nps.set_legend({"font": {"size": 10}})
-        chart_nps.set_size({"width": 420, "height": 300})
+        chart_nps.set_title({"name": "Distribuição NPS", "name_font": chart_title_font})
+        chart_nps.set_legend({"font": {"size": 11}})
+        chart_nps.set_size({"width": 500, "height": 350})
         ws.insert_chart(dept_end + 2, 0, chart_nps, {"x_offset": 10, "y_offset": 10})
 
-        # Topics → Bar
+        # Topics → Bar (horizontal)
         data_sheet.write(0, 3, "Motivo")
         data_sheet.write(0, 4, "Count")
         for i, item in enumerate(dto.topic_data):
@@ -437,13 +389,14 @@ class ExcelExporter(ReportExporter):
                 "categories": f"='_data_dash'!$D$2:$D${len(dto.topic_data)+1}",
                 "values": f"='_data_dash'!$E$2:$E${len(dto.topic_data)+1}",
                 "fill": {"color": COLOR_SECONDARY},
-                "data_labels": {"value": True, "font": {"size": 9}}
+                "data_labels": {"value": True, "font": {"size": 10}}
             })
-            chart_topics.set_title({"name": "Top Motivos de Contato", "name_font": {"bold": True, "size": 12, "color": COLOR_PRIMARY}})
-            chart_topics.set_size({"width": 420, "height": 300})
-            ws.insert_chart(dept_end + 2, 7, chart_topics, {"x_offset": 10, "y_offset": 10})
+            chart_topics.set_title({"name": "Top Motivos de Contato", "name_font": chart_title_font})
+            chart_topics.set_legend({"none": True})
+            chart_topics.set_size({"width": 500, "height": 350})
+            ws.insert_chart(dept_end + 2, 8, chart_topics, {"x_offset": 10, "y_offset": 10})
 
-        # Rating Distribution → Column
+        # Rating Distribution → Column with gradient
         data_sheet.write(0, 6, "Rating")
         data_sheet.write(0, 7, "Count")
         for i, (cat, val) in enumerate(dto.rating_distribution.items()):
@@ -455,14 +408,18 @@ class ExcelExporter(ReportExporter):
             "name": "Avaliações",
             "categories": "='_data_dash'!$G$2:$G$6",
             "values": "='_data_dash'!$H$2:$H$6",
-            "fill": {"color": COLOR_ACCENT},
-            "data_labels": {"value": True, "font": {"size": 10}}
+            "fill": {"color": COLOR_ACCENT, "none": True},
+            "line": {"color": COLOR_ACCENT, "width": 2},
+            "data_labels": {"value": True, "font": {"size": 11, "bold": True}},
+            "marker": {"type": "square", "size": 8, "fill": {"color": COLOR_ACCENT}},
         })
-        chart_rating.set_title({"name": "Distribuição de Notas (CSAT)", "name_font": {"bold": True, "size": 12, "color": COLOR_PRIMARY}})
-        chart_rating.set_size({"width": 420, "height": 260})
-        ws.insert_chart(dept_end + 19, 0, chart_rating, {"x_offset": 10})
+        chart_rating.set_title({"name": "Distribuição de Notas (CSAT)", "name_font": chart_title_font})
+        chart_rating.set_legend({"none": True})
+        chart_rating.set_y_axis({"major_gridlines": {"visible": True, "line": {"color": "#E0E0E0"}}})
+        chart_rating.set_size({"width": 500, "height": 350})
+        ws.insert_chart(dept_end + 22, 0, chart_rating, {"x_offset": 10})
 
-        # Day-of-week → Column
+        # Day-of-week → Column with data labels
         if dto.dow_data:
             data_sheet.write(0, 9, "Dia")
             data_sheet.write(0, 10, "Chats")
@@ -476,15 +433,18 @@ class ExcelExporter(ReportExporter):
                 "categories": "='_data_dash'!$J$2:$J$8",
                 "values": "='_data_dash'!$K$2:$K$8",
                 "fill": {"color": COLOR_ALERT},
-                "data_labels": {"value": True, "font": {"size": 9}}
+                "data_labels": {"value": True, "font": {"size": 10, "bold": True}},
             })
-            chart_dow.set_title({"name": "Chats por Dia da Semana", "name_font": {"bold": True, "size": 12, "color": COLOR_PRIMARY}})
-            chart_dow.set_size({"width": 420, "height": 260})
-            ws.insert_chart(dept_end + 19, 7, chart_dow, {"x_offset": 10})
+            chart_dow.set_title({"name": "Chats por Dia da Semana", "name_font": chart_title_font})
+            chart_dow.set_legend({"none": True})
+            chart_dow.set_y_axis({"major_gridlines": {"visible": True, "line": {"color": "#E0E0E0"}}})
+            chart_dow.set_size({"width": 500, "height": 350})
+            ws.insert_chart(dept_end + 22, 8, chart_dow, {"x_offset": 10})
 
         # ── Rodapé ────────────────────────────────────────────────────────────
         gen_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-        ws.merge_range(50, 0, 50, 14,
+        footer_row = dept_end + 42
+        ws.merge_range(footer_row, 0, footer_row, 14,
                        f"Gerado em {gen_time} | Fonte: Omnichannel MCP | Período: {dto.start_date} a {dto.end_date}",
                        footer_fmt)
 
@@ -709,6 +669,63 @@ class ExcelExporter(ReportExporter):
         for c in range(1, 20):
             ws.set_column(c, c, 14)
 
+        # ── Charts ────────────────────────────────────────────────────────────
+        data_sheet = workbook.add_worksheet("_data_qualidade")
+        data_sheet.hide()
+
+        chart_title_font = {"bold": True, "size": 13, "color": COLOR_PRIMARY}
+
+        # NPS Distribution → Donut
+        data_sheet.write(0, 0, "Categoria")
+        data_sheet.write(0, 1, "Quantidade")
+        nps_cats = {"promoters": "Promotores (9-10)", "passives": "Neutros (7-8)", "detractors": "Detratores (1-6)"}
+        for i, (key, label) in enumerate(nps_cats.items()):
+            data_sheet.write(i + 1, 0, label)
+            data_sheet.write(i + 1, 1, dto.nps_distribution.get(key, 0))
+
+        chart_nps = workbook.add_chart({"type": "doughnut"})
+        chart_nps.add_series({
+            "name": "NPS",
+            "categories": "='_data_qualidade'!$A$2:$A$4",
+            "values": "='_data_qualidade'!$B$2:$B$4",
+            "points": [
+                {"fill": {"color": COLOR_ACCENT}},
+                {"fill": {"color": COLOR_WARNING}},
+                {"fill": {"color": COLOR_ALERT}},
+            ],
+            "data_labels": {
+                "percentage": True, "category": True,
+                "position": "outside_end", "leader_lines": True,
+                "font": {"bold": True, "size": 11, "color": COLOR_TEXT}
+            }
+        })
+        chart_nps.set_title({"name": "Distribuição NPS", "name_font": chart_title_font})
+        chart_nps.set_legend({"font": {"size": 11}})
+        chart_nps.set_size({"width": 450, "height": 320})
+        chart_row = safe_row + 3 if dto.tabular_data else calc_start + 8
+        ws.insert_chart(chart_row, 0, chart_nps, {"x_offset": 10, "y_offset": 10})
+
+        # Rating Distribution → Column chart
+        data_sheet.write(0, 3, "Nota")
+        data_sheet.write(0, 4, "Quantidade")
+        for i, (cat, val) in enumerate(dto.rating_distribution.items()):
+            data_sheet.write(i + 1, 3, f"Nota {cat}")
+            data_sheet.write(i + 1, 4, val)
+
+        chart_rating = workbook.add_chart({"type": "column"})
+        chart_rating.add_series({
+            "name": "Avaliações",
+            "categories": "='_data_qualidade'!$D$2:$D$6",
+            "values": "='_data_qualidade'!$E$2:$E$6",
+            "fill": {"color": COLOR_SECONDARY},
+            "data_labels": {"value": True, "font": {"size": 10, "bold": True}},
+        })
+        chart_rating.set_title({"name": "Distribuição de Notas Técnicas", "name_font": chart_title_font})
+        chart_rating.set_legend({"none": True})
+        chart_rating.set_y_axis({"major_gridlines": {"visible": True, "line": {"color": "#E0E0E0"}}})
+        chart_rating.set_size({"width": 450, "height": 320})
+        ws.insert_chart(chart_row, 8, chart_rating, {"x_offset": 10, "y_offset": 10})
+
     def _write_demand_tab(self, workbook: xlsxwriter.Workbook, dto: DashboardDTO):
         ws = workbook.add_worksheet("Demanda")
         total_chats = dto.general_metrics.get("total_chats", 0)
@@ -846,6 +863,104 @@ class ExcelExporter(ReportExporter):
         ws.set_column(0, 0, 35)
         ws.set_column(1, 1, 16)
         ws.set_column(2, 2, 14)
+
+        # ── Charts ────────────────────────────────────────────────────────────
+        data_sheet = workbook.add_worksheet("_data_demanda")
+        data_sheet.hide()
+
+        chart_title_font = {"bold": True, "size": 13, "color": COLOR_PRIMARY}
+
+        # Top Motivos → Bar chart
+        if dto.topic_data:
+            data_sheet.write(0, 0, "Motivo")
+            data_sheet.write(0, 1, "Atendimentos")
+            for i, item in enumerate(dto.topic_data):
+                data_sheet.write(i + 1, 0, item["label"])
+                data_sheet.write(i + 1, 1, item["value"])
+
+            chart_motivos = workbook.add_chart({"type": "bar"})
+            chart_motivos.add_series({
+                "name": "Atendimentos",
+                "categories": f"='_data_demanda'!$A$2:$A${len(dto.topic_data)+1}",
+                "values": f"='_data_demanda'!$B$2:$B${len(dto.topic_data)+1}",
+                "fill": {"color": COLOR_SECONDARY},
+                "data_labels": {"value": True, "font": {"size": 10, "bold": True}},
+            })
+            chart_motivos.set_title({"name": "Principais Motivos de Contato", "name_font": chart_title_font})
+            chart_motivos.set_legend({"none": True})
+            chart_motivos.set_x_axis({"reverse": True})
+            chart_motivos.set_size({"width": 600, "height": 380})
+            ws.insert_chart(o_row + 3, 0, chart_motivos, {"x_offset": 10, "y_offset": 10})
+
+        # Top Ocorrências → Bar chart
+        if dto.occurrence_data:
+            data_sheet.write(0, 3, "Ocorrência")
+            data_sheet.write(0, 4, "Atendimentos")
+            for i, item in enumerate(dto.occurrence_data):
+                data_sheet.write(i + 1, 3, item["label"])
+                data_sheet.write(i + 1, 4, item["value"])
+
+            chart_ocorr = workbook.add_chart({"type": "bar"})
+            chart_ocorr.add_series({
+                "name": "Atendimentos",
+                "categories": f"='_data_demanda'!$D$2:$D${len(dto.occurrence_data)+1}",
+                "values": f"='_data_demanda'!$E$2:$E${len(dto.occurrence_data)+1}",
+                "fill": {"color": COLOR_WARNING},
+                "data_labels": {"value": True, "font": {"size": 10, "bold": True}},
+            })
+            chart_ocorr.set_title({"name": "Principais Ocorrências", "name_font": chart_title_font})
+            chart_ocorr.set_legend({"none": True})
+            chart_ocorr.set_x_axis({"reverse": True})
+            chart_ocorr.set_size({"width": 600, "height": 380})
+            ws.insert_chart(o_row + 3, 8, chart_ocorr, {"x_offset": 10, "y_offset": 10})
+
+        # Chats por Dia da Semana → Column chart
+        if dto.dow_data:
+            data_sheet.write(0, 6, "Dia")
+            data_sheet.write(0, 7, "Chats")
+            for i, item in enumerate(dto.dow_data):
+                data_sheet.write(i + 1, 6, item["day"])
+                data_sheet.write(i + 1, 7, item["value"])
+
+            chart_dow = workbook.add_chart({"type": "column"})
+            chart_dow.add_series({
+                "name": "Chats",
+                "categories": "='_data_demanda'!$G$2:$G$8",
+                "values": "='_data_demanda'!$H$2:$H$8",
+                "fill": {"color": COLOR_ACCENT},
+                "data_labels": {"value": True, "font": {"size": 10, "bold": True}},
+            })
+            chart_dow.set_title({"name": "Chats por Dia da Semana", "name_font": chart_title_font})
+            chart_dow.set_legend({"none": True})
+            chart_dow.set_y_axis({"major_gridlines": {"visible": True, "line": {"color": "#E0E0E0"}}})
+            chart_dow.set_size({"width": 600, "height": 380})
+            ws.insert_chart(o_row + 28, 0, chart_dow, {"x_offset": 10, "y_offset": 10})
+
+        # Heatmap overview → Column chart (total by hour)
+        total_by_hour = [0] * 24
+        for item in dto.heatmap_data:
+            h = item["hour"]
+            total_by_hour[h] += item["value"]
+
+        data_sheet.write(0, 9, "Hora")
+        data_sheet.write(0, 10, "Chats")
+        for h in range(24):
+            data_sheet.write(h + 1, 9, f"{h}h")
+            data_sheet.write(h + 1, 10, total_by_hour[h])
+
+        chart_hourly = workbook.add_chart({"type": "column"})
+        chart_hourly.add_series({
+            "name": "Chats",
+            "categories": "='_data_demanda'!$J$2:$J$25",
+            "values": "='_data_demanda'!$K$2:$K$25",
+            "fill": {"color": COLOR_PRIMARY},
+            "data_labels": {"value": True, "font": {"size": 9}},
+        })
+        chart_hourly.set_title({"name": "Distribuição por Hora do Dia", "name_font": chart_title_font})
+        chart_hourly.set_legend({"none": True})
+        chart_hourly.set_y_axis({"major_gridlines": {"visible": True, "line": {"color": "#E0E0E0"}}})
+        chart_hourly.set_size({"width": 600, "height": 380})
+        ws.insert_chart(o_row + 28, 8, chart_hourly, {"x_offset": 10, "y_offset": 10})
 
     def _write_data_sheet(self, workbook: xlsxwriter.Workbook, dto: DashboardDTO):
         data_sheet = workbook.add_worksheet("_data")

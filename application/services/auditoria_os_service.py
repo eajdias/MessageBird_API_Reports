@@ -52,7 +52,8 @@ class AuditoriaOSService:
                 "Sim" if has_reopening else "Não",
                 r["cnvs_description"] or "",
                 duration if duration > 0 else "N/D",
-                r["cnvs_id"]
+                r["cnvs_id"],
+                f"./OS/OS_{r['cnvs_bird']}.pdf" if r["cnvs_bird"] else ""
             ])
 
         return constants.OS_HEADER, data_list
@@ -102,7 +103,8 @@ class AuditoriaOSService:
                 "Sim" if has_reopening else "Não",
                 r["cnvs_description"] or "",
                 duration if duration > 0 else "N/D",
-                r["cnvs_id"]
+                r["cnvs_id"],
+                f"./OS/OS_{r['cnvs_bird']}.pdf" if r["cnvs_bird"] else ""
             ])
 
         return constants.OS_HEADER, data_list

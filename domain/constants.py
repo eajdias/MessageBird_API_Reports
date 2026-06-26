@@ -119,7 +119,8 @@ OS_HEADER = [
     "Reaberturas",
     "Descrição do Problema",
     "Duração (min)",
-    "ID BD"
+    "ID BD",
+    "Caminho PDF"
 ]
 
 # ── Annual report headers ─────────────────────────────────────────────────────
