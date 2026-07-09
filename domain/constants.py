@@ -223,6 +223,7 @@ OCCURRENCE_MAP = DEFAULT_OCCURRENCE_MAP
 LANG_MAP = DEFAULT_LANG_MAP
 AGENTS = {}
 KPI_CONFIG = DEFAULT_KPI_CONFIG
+DEPT_ROUTING: dict[str, str] = {}
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 
@@ -237,6 +238,15 @@ def get_agent_group(agent_name: str | None) -> str:
             return info["group"]
             
     return "OUTROS"
+
+def resolve_conversation_group(agent_name: str | None, dept_label: str) -> str:
+    if DEPT_ROUTING and dept_label in DEPT_ROUTING:
+        return DEPT_ROUTING[dept_label]
+    if not DEPT_ROUTING:
+        return get_agent_group(agent_name)
+    if not dept_label or dept_label in ("N/A", "None", ""):
+        return "Sem Departamento"
+    return get_agent_group(agent_name)
 
 def _to_int(val) -> int | None:
     try:

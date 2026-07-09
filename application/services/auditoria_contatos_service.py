@@ -11,7 +11,7 @@ class AuditoriaContatosService:
     async def build_report(self, start_date: str, end_date: str, agent_group: str = None) -> Tuple[List[str], List[Any]]:
         raw_data = await self.repository.fetch_auditoria_contatos_raw(start_date, end_date)
         if agent_group:
-            valid_cids = {r["cnvs_id"] for r in raw_data if r["agnt_name"] and r["agnt_name"].lower() != "sistema" and constants.get_agent_group(r["agnt_name"]) == agent_group}
+            valid_cids = {r["cnvs_id"] for r in raw_data if r["agnt_name"] and r["agnt_name"].lower() != "sistema" and constants.resolve_conversation_group(r["agnt_name"], constants.resolve_dept(r["cnvs_dept"])) == agent_group}
             raw_data = [r for r in raw_data if r["cnvs_id"] in valid_cids]
         contact_data = {}
         for row in raw_data:
@@ -49,7 +49,7 @@ class AuditoriaContatosService:
     async def build_report_all(self, agent_group: str = None) -> Tuple[List[str], List[Any]]:
         raw_data = await self.repository.fetch_auditoria_contatos_raw_all()
         if agent_group:
-            valid_cids = {r["cnvs_id"] for r in raw_data if r["agnt_name"] and r["agnt_name"].lower() != "sistema" and constants.get_agent_group(r["agnt_name"]) == agent_group}
+            valid_cids = {r["cnvs_id"] for r in raw_data if r["agnt_name"] and r["agnt_name"].lower() != "sistema" and constants.resolve_conversation_group(r["agnt_name"], constants.resolve_dept(r["cnvs_dept"])) == agent_group}
             raw_data = [r for r in raw_data if r["cnvs_id"] in valid_cids]
         contact_data = {}
         for row in raw_data:

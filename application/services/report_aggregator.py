@@ -253,7 +253,7 @@ class ReportAggregator:
             main_dept = depts.most_common(1)[0][0] if depts else "N/A"
             
             rows.append(self._build_agent_row(
-                main_dept, constants.get_agent_group(agent), agent, stats
+                main_dept, constants.resolve_conversation_group(agent, main_dept), agent, stats
             ))
             
         # Add Global Summary Row at the top
@@ -273,7 +273,7 @@ class ReportAggregator:
     def _build_groups_rows(self, data: List[ProcessedReportData]) -> List[List[Any]]:
         group_map: Dict[str, List[ProcessedReportData]] = {}
         for p in data:
-            grp = constants.get_agent_group(p.agent)
+            grp = constants.resolve_conversation_group(p.agent, p.dept_label)
             if grp not in group_map:
                 group_map[grp] = []
             group_map[grp].append(p)

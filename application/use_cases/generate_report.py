@@ -102,8 +102,8 @@ class GenerateReportUseCase:
             os.makedirs(group_path, exist_ok=True)
             
             # Filter data for this group
-            group_raw = [r for r in raw_data if constants.get_agent_group(r.metadata.get("agent_name")) == group]
-            group_processed = [p for p in processed_data if constants.get_agent_group(p.agent) == group]
+            group_raw = [r for r in raw_data if constants.resolve_conversation_group(r.metadata.get("agent_name"), r.dept_label) == group]
+            group_processed = [p for p in processed_data if constants.resolve_conversation_group(p.agent, p.dept_label) == group]
             
             # Group Dashboard
             g_dash_dto = self.aggregator.aggregate_dashboard(
@@ -221,9 +221,9 @@ class GenerateReportUseCase:
             os.makedirs(group_path, exist_ok=True)
 
             group_raw = [r for r in raw_data
-                         if constants.get_agent_group(r.metadata.get("agent_name")) == group]
+                         if constants.resolve_conversation_group(r.metadata.get("agent_name"), r.dept_label) == group]
             group_processed = [p for p in processed_data
-                               if constants.get_agent_group(p.agent) == group]
+                               if constants.resolve_conversation_group(p.agent, p.dept_label) == group]
 
             g_dash_dto = self.aggregator.aggregate_dashboard(
                 group_processed,
@@ -327,9 +327,9 @@ class GenerateReportUseCase:
             os.makedirs(group_path, exist_ok=True)
 
             group_raw = [r for r in raw_data
-                         if constants.get_agent_group(r.metadata.get("agent_name")) == group]
+                         if constants.resolve_conversation_group(r.metadata.get("agent_name"), r.dept_label) == group]
             group_processed = [p for p in processed_data
-                               if constants.get_agent_group(p.agent) == group]
+                               if constants.resolve_conversation_group(p.agent, p.dept_label) == group]
 
             g_dash_dto = self.aggregator.aggregate_dashboard(
                 group_processed,

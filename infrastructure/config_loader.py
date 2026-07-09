@@ -28,6 +28,8 @@ def load_and_configure_business(config_path: str):
                 constants.AGENTS = custom_config["AGENTS"]
             if "KPI_CONFIG" in custom_config:
                 constants.KPI_CONFIG = custom_config["KPI_CONFIG"]
+            if "DEPT_ROUTING" in custom_config:
+                constants.DEPT_ROUTING = custom_config["DEPT_ROUTING"]
                 
     except Exception as e:
         print(f"Erro ao carregar configuração: {e}")

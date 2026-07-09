@@ -81,6 +81,10 @@ E o "coracao" da configuracao de relatorios. Define como dados brutos se tornam 
         "2": "English",
         "3": "Espanol"
     },
+    "DEPT_ROUTING": {
+        "Ouvidoria": "Ouvidoria",
+        "Nova Instalação | Migração": "CS | Instalação | Migração | Ouvidoria"
+    },
     "AGENTS": {
         "bird_id_do_agente": {
             "name": "Nome do Agente",
@@ -106,6 +110,13 @@ Mapeia ocorrencias por departamento e motivo. Estrutura: `departamento -> motivo
 
 #### `LANG_MAP`
 Mapeia idiomas para nomes.
+
+#### `DEPT_ROUTING` (opcional)
+Redireciona conversas de um departamento para um grupo de relatório específico, independente do grupo do agente que atendeu. A chave é o nome do departamento (conforme `DEPT_MAP`), o valor é o nome do grupo de destino.
+
+**Exemplo**: uma conversa com departamento "Ouvidoria" atendida por um agente do "Suporte Técnico" aparecerá na pasta "Ouvidoria" do relatório.
+
+Se um departamento não estiver em `DEPT_ROUTING`, o comportamento padrão (grupo do agente) é mantido.
 
 #### `AGENTS`
 Mapeia agentes MessageBird para nomes e grupos. Cada entrada tem:

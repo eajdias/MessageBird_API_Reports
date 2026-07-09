@@ -20,9 +20,10 @@ class AuditoriaOSService:
         data_list = []
         for r in rows:
             agnt_name = r["agnt_name"] or "Não Mapeado"
-            grp = constants.get_agent_group(agnt_name)
-            if agent_group and grp != agent_group:
-                continue
+            if agent_group:
+                conv_dept_label = constants.resolve_dept(r["cnvs_dept"])
+                if constants.resolve_conversation_group(agnt_name, conv_dept_label) != agent_group:
+                    continue
 
             created = logic.format_local_dt(r["cnvs_created"])
             dept = constants.resolve_dept(r["cnvs_dept"])
@@ -71,9 +72,10 @@ class AuditoriaOSService:
         data_list = []
         for r in rows:
             agnt_name = r["agnt_name"] or "Não Mapeado"
-            grp = constants.get_agent_group(agnt_name)
-            if agent_group and grp != agent_group:
-                continue
+            if agent_group:
+                conv_dept_label = constants.resolve_dept(r["cnvs_dept"])
+                if constants.resolve_conversation_group(agnt_name, conv_dept_label) != agent_group:
+                    continue
 
             created = logic.format_local_dt(r["cnvs_created"])
             dept = constants.resolve_dept(r["cnvs_dept"])

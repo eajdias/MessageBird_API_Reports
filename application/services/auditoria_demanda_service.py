@@ -20,7 +20,7 @@ class AuditoriaDemandaService:
 
         msg_rows = await self.repository.fetch_auditoria_demanda_raw(start_date, end_date)
         if agent_group:
-            valid_cids = {r["cnvs_id"] for r in msg_rows if r["agnt_name"] and r["agnt_name"].lower() != "sistema" and constants.get_agent_group(r["agnt_name"]) == agent_group}
+            valid_cids = {r["cnvs_id"] for r in msg_rows if r["agnt_name"] and r["agnt_name"].lower() != "sistema" and constants.resolve_conversation_group(r["agnt_name"], constants.resolve_dept(r["cnvs_dept"])) == agent_group}
             msg_rows = [r for r in msg_rows if r["cnvs_id"] in valid_cids]
 
         for r in msg_rows:

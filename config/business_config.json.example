@@ -58,6 +58,13 @@
         "2": "English",
         "3": "Espanol"
     },
+    "DEPT_ROUTING": {
+        "Ouvidoria": "Ouvidoria",
+        "Suporte Tecnico": "Suporte Tecnico",
+        "Comercial": "Comercial",
+        "Financeiro": "Financeiro",
+        "Nova Instalacao | Migracao": "CS | Instalacao | Migracao | Ouvidoria"
+    },
     "AGENTS": {
         "bird_id_do_agente_1": {
             "name": "Nome do Agente 1",

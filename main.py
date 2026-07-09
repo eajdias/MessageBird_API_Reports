@@ -28,7 +28,7 @@ async def main():
     report_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
     report_parser.add_argument("--config-path", default="config/business_config.json", help="Caminho para business_config.json")
     report_parser.add_argument("--skip-os", action="store_true", help="Pular Ordens de Serviço")
-    report_parser.add_argument("--sector", default="Suporte Técnico", help="Filtrar por um setor/grupo específico (ex: 'Comercial'). Padrão: Suporte Técnico")
+    report_parser.add_argument("--sector", default=None, help="Filtrar por um setor/grupo específico (ex: 'Comercial')")
 
     # Total parser
     total_parser = subparsers.add_parser("total", help="Gerar relatório total do sistema (todo o histórico)")
@@ -36,7 +36,7 @@ async def main():
     total_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
     total_parser.add_argument("--config-path", default="config/business_config.json", help="Caminho para business_config.json")
     total_parser.add_argument("--skip-os", action="store_true", help="Pular Ordens de Serviço")
-    total_parser.add_argument("--sector", default="Suporte Técnico", help="Filtrar por um setor/grupo específico. Padrão: Suporte Técnico")
+    total_parser.add_argument("--sector", default=None, help="Filtrar por um setor/grupo específico")
 
     # Sync parser
     sync_parser = subparsers.add_parser("sync", help="Sincronizar banco de dados")

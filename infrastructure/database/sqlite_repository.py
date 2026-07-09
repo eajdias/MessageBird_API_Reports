@@ -29,8 +29,10 @@ class SqliteReportRepository(ReportRepository):
             msg_agnt_name = r["message_agent_name"]
             
             # Apply agent group filter if provided
-            if agent_group and constants.get_agent_group(conv_agnt_name) != agent_group:
-                continue
+            if agent_group:
+                conv_dept_label = constants.resolve_dept(r["cnvs_dept"])
+                if constants.resolve_conversation_group(conv_agnt_name, conv_dept_label) != agent_group:
+                    continue
 
             if cid not in conversations:
                 raw_msgs = [RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name)]
@@ -65,7 +67,7 @@ class SqliteReportRepository(ReportRepository):
     async def fetch_auditoria_contatos_raw(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
         start_dt, end_dt = logic.get_utc_range(start_date, end_date)
         query = """
-        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_rating_agent, cv.cnvs_rating_nps, m.msgs_created, a.agnt_name
+        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_dept, cv.cnvs_rating_agent, cv.cnvs_rating_nps, m.msgs_created, a.agnt_name
         FROM contacts c
         JOIN conversations cv ON c.cnts_id = cv.cnvs_cnts
         JOIN messages m ON cv.cnvs_id = m.msgs_cnvs
@@ -117,6 +119,23 @@ class SqliteReportRepository(ReportRepository):
             g = constants.get_agent_group(a)
             if g != "OUTROS" and g != "N/A":
                 groups.add(g)
+
+        # Add groups from DEPT_ROUTING based on departments present in the period
+        dept_rows = await self.db.fetch_all(
+            "SELECT DISTINCT c.cnvs_dept FROM conversations c "
+            "WHERE (datetime(c.cnvs_created) BETWEEN ? AND ?) "
+            "   OR (datetime(c.cnvs_updated) BETWEEN ? AND ?)",
+            (start_dt, end_dt, start_dt, end_dt)
+        )
+        for row in dept_rows:
+            dept_id = row[0]
+            if dept_id is not None:
+                dept_label = constants.resolve_dept(dept_id)
+                if dept_label in constants.DEPT_ROUTING:
+                    groups.add(constants.DEPT_ROUTING[dept_label])
+            elif constants.DEPT_ROUTING:
+                groups.add("Sem Departamento")
+
         return sorted(list(groups))
 
     async def fetch_raw_data_all(self, agent_group: str = None) -> List[RawConversationData]:
@@ -129,8 +148,10 @@ class SqliteReportRepository(ReportRepository):
             conv_agnt_name = r["conversation_agent_name"] or "Desconhecido"
             msg_agnt_name = r["message_agent_name"]
 
-            if agent_group and constants.get_agent_group(conv_agnt_name) != agent_group:
-                continue
+            if agent_group:
+                conv_dept_label = constants.resolve_dept(r["cnvs_dept"])
+                if constants.resolve_conversation_group(conv_agnt_name, conv_dept_label) != agent_group:
+                    continue
 
             if cid not in conversations:
                 raw_msgs = [RawMessageData(r["msgs_created"], r["msgs_direction"], r["msgs_agnt"], msg_agnt_name)]
@@ -169,11 +190,25 @@ class SqliteReportRepository(ReportRepository):
             g = constants.get_agent_group(a)
             if g != "OUTROS" and g != "N/A":
                 groups.add(g)
+
+        # Add groups from DEPT_ROUTING
+        dept_rows = await self.db.fetch_all(
+            "SELECT DISTINCT c.cnvs_dept FROM conversations c"
+        )
+        for row in dept_rows:
+            dept_id = row[0]
+            if dept_id is not None:
+                dept_label = constants.resolve_dept(dept_id)
+                if dept_label in constants.DEPT_ROUTING:
+                    groups.add(constants.DEPT_ROUTING[dept_label])
+            elif constants.DEPT_ROUTING:
+                groups.add("Sem Departamento")
+
         return sorted(list(groups))
 
     async def fetch_auditoria_contatos_raw_all(self) -> List[Dict[str, Any]]:
         query = """
-        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_rating_agent, cv.cnvs_rating_nps, m.msgs_created, a.agnt_name
+        SELECT c.cnts_id, c.cnts_name, c.cnts_phone, cv.cnvs_id, cv.cnvs_dept, cv.cnvs_rating_agent, cv.cnvs_rating_nps, m.msgs_created, a.agnt_name
         FROM contacts c
         JOIN conversations cv ON c.cnts_id = cv.cnvs_cnts
         JOIN messages m ON cv.cnvs_id = m.msgs_cnvs
