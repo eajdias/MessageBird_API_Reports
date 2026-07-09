@@ -15,40 +15,30 @@ Ferramenta autonoma para sincronizacao de dados e geracao de relatorios avancado
 
 ### 1. Instalacao
 
-```bash
+```
 # Copiar template de ambiente
 cp config/.env.example config/.env
-
-# Editar com suas credenciais da MessageBird
-nano config/.env
-
-# Copiar template de configuracao de negocios
 cp config/business_config.json.example config/business_config.json
 
-# Editar com seus agentes e departamentos
-nano config/business_config.json
-
 # Instalar dependencias
-make install
+uv sync
 ```
 
 ### 2. Primeira Sincronizacao
 
 Para um banco com dados de um periodo especifico (ex: ultimo mes):
 
-```bash
-# Sincronizar um mes inteiro (conversas + mensagens)
-make sync-monthly YEAR=2026 MONTH=6
+```
+uv run python main.py sync --year 2026 --month 6
 ```
 
 ### 3. Gerar Relatorio
 
-```bash
-# Relatorio mensal
-make report YEAR=2026 MONTH=6
+```
+uv run python main.py report --year 2026 --month 6
 
 # Relatorio de periodo personalizado
-make report-dates FROM=2026-05-25 TO=2026-06-26
+uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26
 ```
 
 ## Comandos Disponiveis
@@ -57,29 +47,29 @@ make report-dates FROM=2026-05-25 TO=2026-06-26
 
 | Comando | Descricao | Quando usar |
 |:--------|:----------|:------------|
-| `make sync` | Incremental (ultimos 60 min) | Cron job a cada hora |
-| `make sync-daily` | Diario (ultimo dia com mensagens) | Cron job diario |
-| `make sync-monthly YEAR=2026 MONTH=6` | Mes especifico (conversas + mensagens) | Backfill de um mes |
-| `make sync-daily --messages-days 7` | Ultimos N dias com mensagens | Periodo personalizado |
+| `uv run python main.py sync` | Incremental (ultimos 60 min) | Cron job a cada hora |
+| `uv run python main.py sync --messages-days 1` | Diario (ultimo dia com mensagens) | Cron job diario |
+| `uv run python main.py sync --year 2026 --month 6` | Mes especifico (conversas + mensagens) | Backfill de um mes |
+| `uv run python main.py sync --messages-days 7` | Ultimos N dias com mensagens | Periodo personalizado |
 
 ### Geracao de Relatorios
 
 | Comando | Descricao | Saida |
 |:--------|:----------|:------|
-| `make report YEAR=2026 MONTH=6` | Relatorio mensal | `reports/2026/2026-06/` |
-| `make report-dates FROM=2026-05-25 TO=2026-06-26` | Periodo personalizado | `reports/20260525_20260626/` |
-| `make annual YEAR=2026` | Relatorio anual consolidado | `reports/2026/` |
-| `make total` | Todo o historico do banco | `reports/total/` |
+| `uv run python main.py report --year 2026 --month 6` | Relatorio mensal | `reports/2026/2026-06/` |
+| `uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26` | Periodo personalizado | `reports/20260525_20260626/` |
+| `uv run python main.py report --year 2026` | Relatorio anual consolidado | `reports/2026/` |
+| `uv run python main.py total` | Todo o historico do banco | `reports/total/` |
 
 ### Filtrar por Setor
 
-Adicione `SECTOR="Nome do Setor"` para gerar apenas para um grupo:
+Adicione `--sector "Nome do Setor"` para gerar apenas para um grupo:
 
-```bash
-make report YEAR=2026 MONTH=6 SECTOR="Suporte Tecnico"
-make report-dates FROM=2026-05-25 TO=2026-06-26 SECTOR="Comercial"
-make annual YEAR=2026 SECTOR="Gerencia"
-make total SECTOR="Financeiro"
+```
+uv run python main.py report --year 2026 --month 6 --sector "Suporte Tecnico"
+uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26 --sector "Comercial"
+uv run python main.py report --year 2026 --sector "Gerencia"
+uv run python main.py total --sector "Financeiro"
 ```
 
 ## Estrutura de Saida
@@ -121,21 +111,12 @@ reports/2026/
     ...
 ```
 
-## Uso Direto via Python
+## Ajuda
 
-Se precisar de controle fino, execute diretamente:
-
-```bash
-# Ver ajuda completa
+```
 uv run python main.py --help
 uv run python main.py report --help
 uv run python main.py sync --help
-
-# Sincronizar periodo especifico
-uv run python main.py sync --year 2026 --month 6
-
-# Gerar relatorio de periodo personalizado
-uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26
 ```
 
 ## Documentacao Completa

@@ -136,6 +136,14 @@ async def main():
         print(f"\nRelatórios gerados em: {args.output_dir}")
 
     elif args.command == "sync":
+        has_year = args.year is not None
+        has_month = args.month is not None
+        if has_year != has_month:
+            terminal.console.print("[bold red]ERRO:[/] Use --year e --month juntos para sincronização mensal.")
+            return
+        if has_year and (args.month < 1 or args.month > 12):
+            terminal.console.print("[bold red]ERRO:[/] Mês deve estar entre 1 e 12.")
+            return
         terminal.print_panel(
             f"Iniciando Sincronização do Banco de Dados\n"
             f"DB: {args.db_path}",

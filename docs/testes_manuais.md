@@ -6,13 +6,12 @@ Este documento descreve o procedimento para realizar a validação manual do sis
 
 Antes de iniciar, certifique-se de que as dependências estão instaladas e o ambiente configurado.
 
-```bash
+```
 # Instalar dependências
-make install
+uv sync
 
-# Validar variáveis de ambiente
+# Copiar template de ambiente e editar com suas chaves de API
 cp config/.env.example config/.env
-# Edite config/.env com suas chaves de API
 ```
 
 ## 2. Fluxo de Sincronização (Sync)
@@ -21,8 +20,8 @@ cp config/.env.example config/.env
 
 ### Sincronização Mensal (Recomendado)
 Para validar um período específico (ex: Maio de 2026):
-```bash
-make sync-monthly YEAR=2026 MONTH=5
+```
+uv run python main.py sync --year 2026 --month 5
 ```
 **Critério de Aceite:**
 - O log deve mostrar "Monthly synchronization completed".
@@ -30,16 +29,16 @@ make sync-monthly YEAR=2026 MONTH=5
 
 ### Sincronização Incremental
 Para buscar apenas os dados da última hora:
-```bash
-make sync
+```
+uv run python main.py sync
 ```
 
 ## 3. Geração de Relatórios
 
 Após a sincronização, gere os arquivos de auditoria e performance.
 
-```bash
-make report YEAR=2026 MONTH=5
+```
+uv run python main.py report --year 2026 --month 5
 ```
 
 **Critério de Aceite:**
@@ -52,14 +51,14 @@ make report YEAR=2026 MONTH=5
 Utilize o terminal para rodar queries rápidas e validar se o banco reflete a realidade.
 
 ### Contagem de conversas por período
-```bash
-sqlite3 m_bird.db "SELECT count(*) FROM conversations WHERE cnvs_created BETWEEN '2026-05-01' AND '2026-05-31';"
+```
+uv run python -c "import sqlite3; c=sqlite3.connect('m_bird.db'); print(c.execute(\"SELECT count(*) FROM conversations WHERE cnvs_created BETWEEN '2026-05-01' AND '2026-05-31'\").fetchone()[0])"
 ```
 
 ### Validação de campos de Auditoria
 Certifique-se de que os campos de avaliação estão sendo populados:
-```bash
-sqlite3 m_bird.db "SELECT cnvs_bird, cnvs_rating_nps, cnvs_rating_agent FROM conversations WHERE cnvs_rating_nps IS NOT NULL LIMIT 10;"
+```
+uv run python -c "import sqlite3; c=sqlite3.connect('m_bird.db'); [print(r) for r in c.execute(\"SELECT cnvs_bird, cnvs_rating_nps, cnvs_rating_agent FROM conversations WHERE cnvs_rating_nps IS NOT NULL LIMIT 10\").fetchall()]"
 ```
 
 ## 5. Checklist de Qualidade
@@ -72,6 +71,6 @@ Ao abrir os relatórios Excel, verifique:
 
 ## 6. Troubleshooting
 
-- **ModuleNotFoundError:** Certifique-se de usar `make` ou prefixar comandos com `uv run`.
+- **ModuleNotFoundError:** Certifique-se de usar `uv sync` primeiro e prefixar comandos com `uv run`.
 - **InvalidWorksheetName:** O sistema trunca automaticamente para 31 chars, mas nomes de grupos no `business_config.json` muito similares podem gerar conflito de arquivos.
-- **SQLite Error (No such table):** Execute `make sync` (ou qualquer sync) para disparar a inicialização do schema.
+- **SQLite Error (No such table):** Execute `uv run python main.py sync` para disparar a inicialização do schema.

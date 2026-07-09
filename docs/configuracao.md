@@ -6,11 +6,11 @@ Guia completo para configurar a ferramenta de relatorios MessageBird.
 
 ## 1. Arquivo `.env`
 
-Copia o template e preencha com suas credenciais:
-
-```bash
+Copie o arquivo de template e preencha com suas credenciais:
+```
 cp config/.env.example config/.env
 ```
+(No Windows, use `Copy-Item config/.env.example config/.env`)
 
 ### Variaveis Obrigatorias
 

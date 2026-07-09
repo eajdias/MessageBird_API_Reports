@@ -126,9 +126,9 @@ presentation/
 
 ## 5. Comandos de Desenvolvimento
 
-```bash
+```
 # Instalar dependencias
-make install
+uv sync
 
 # Rodar testes
 uv run pytest tests/
