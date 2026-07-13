@@ -1,6 +1,7 @@
 import asyncio
 import argparse
 import os
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv("config/.env")
@@ -15,6 +16,9 @@ from domain import constants
 from presentation import terminal
 
 async def main():
+    if sys.platform == "win32":
+        sys.stdout.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(description="Standalone Report & Sync Tool")
     subparsers = parser.add_subparsers(dest="command", help="Comandos disponíveis")
     

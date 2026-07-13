@@ -1,4 +1,5 @@
 import os
+import re
 import asyncio
 import calendar
 import logging
@@ -17,6 +18,17 @@ from domain.entities.report_data import RawConversationData
 from domain import constants
 
 logger = logging.getLogger("standalone.generate_report")
+
+def _sanitize_path_segment(name: str) -> str:
+    """Replace characters invalid on Windows filesystems with underscores."""
+    name = name.strip()
+    # Keep only characters valid in Windows filenames:
+    # \w = Unicode letters, digits, underscore
+    # \s = whitespace
+    # plus safe punctuation
+    safe = re.compile(r"[^\w\s\-.()\[\]{}!@#$%^&+=,;'~]")
+    name = safe.sub("_", name)
+    return name.rstrip(".")
 
 class GenerateReportUseCase:
     def __init__(self, repository: ReportRepository, exporter: ReportExporter):
@@ -97,7 +109,7 @@ class GenerateReportUseCase:
             return None
 
         async def process_group(group):
-            safe_group = group.replace(" ", "_")
+            safe_group = _sanitize_path_segment(group)
             group_path = os.path.join(report_subdir, safe_group)
             os.makedirs(group_path, exist_ok=True)
             
@@ -216,7 +228,7 @@ class GenerateReportUseCase:
         groups = [g for g in all_groups if g == sector] if sector else all_groups
 
         async def process_group(group):
-            safe_group = group.replace(" ", "_")
+            safe_group = _sanitize_path_segment(group)
             group_path = os.path.join(report_subdir, safe_group)
             os.makedirs(group_path, exist_ok=True)
 
@@ -322,7 +334,7 @@ class GenerateReportUseCase:
         unmapped_agents, unmapped_depts = await self.repository.fetch_unmapped_counts()
 
         async def process_group(group):
-            safe_group = group.replace(" ", "_")
+            safe_group = _sanitize_path_segment(group)
             group_path = os.path.join(report_subdir, safe_group)
             os.makedirs(group_path, exist_ok=True)
 
