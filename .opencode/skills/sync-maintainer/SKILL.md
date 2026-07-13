@@ -8,7 +8,7 @@ description: Mantenedor da pipeline de sincronização MessageBird -> SQLite, fo
 Esta skill supervisiona a ingestão de dados, garantindo que o banco de dados local reflita fielmente e eficientemente a API externa.
 
 ## Gatilhos
-- Alteração nos comandos de sincronização (`presentation/tools/`).
+- Alteração nos comandos de sincronização (`main.py` e `presentation/terminal.py`).
 - Adição de novos campos da API MessageBird.
 - Mudanças no esquema do banco de dados `m_bird.db`.
 

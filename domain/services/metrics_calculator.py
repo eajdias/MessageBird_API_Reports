@@ -2,20 +2,27 @@ from datetime import datetime
 from typing import List, Optional
 
 class MetricsCalculator:
+    # Thresholds configuráveis (sobrescritos por business_bsc.json via config_loader)
+    nps_promoter_min = 9
+    nps_passive_min = 7
+    sla_threshold_minutes = 60
+
     @staticmethod
     def calculate_nps(scores: List[float]) -> Optional[float]:
         """Calcula o NPS (Net Promoter Score)."""
         valid_scores = [v for v in scores if isinstance(v, (int, float))]
         if not valid_scores:
             return None
-        promoters = sum(1 for v in valid_scores if v >= 9)
-        detractors = sum(1 for v in valid_scores if v <= 6)
+        promoters = sum(1 for v in valid_scores if v >= MetricsCalculator.nps_promoter_min)
+        detractors = sum(1 for v in valid_scores if v < MetricsCalculator.nps_passive_min)
         total = len(valid_scores)
         return round((promoters - detractors) / total * 100, 2)
 
     @staticmethod
-    def calculate_sla_rate(arts: List[float], threshold: int = 60) -> Optional[float]:
+    def calculate_sla_rate(arts: List[float], threshold: Optional[int] = None) -> Optional[float]:
         """Calcula a taxa de conformidade SLA (%) baseada no ART."""
+        if threshold is None:
+            threshold = MetricsCalculator.sla_threshold_minutes
         valid_arts = [a for a in arts if isinstance(a, (int, float))]
         if not valid_arts:
             return None
@@ -50,9 +57,9 @@ class MetricsCalculator:
         valid_scores = [v for v in scores if isinstance(v, (int, float))]
         dist = {"promoters": 0, "passives": 0, "detractors": 0}
         for v in valid_scores:
-            if v >= 9:
+            if v >= MetricsCalculator.nps_promoter_min:
                 dist["promoters"] += 1
-            elif v >= 7:
+            elif v >= MetricsCalculator.nps_passive_min:
                 dist["passives"] += 1
             else:
                 dist["detractors"] += 1

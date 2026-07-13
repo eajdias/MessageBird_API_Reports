@@ -141,27 +141,32 @@ class ReportAggregator:
         def _count(agent):
             return len(agent_map[agent])
 
+        kpi_cfg = next(iter(constants.KPI_CONFIG.values()), {})
+        t1_defs = kpi_cfg.get("t1", [])
+        t2_defs = kpi_cfg.get("t2", [])
+
+        # Métricas automáticas: nome (conforme KPI_CONFIG) -> função de cálculo por agente.
+        # Demais métricas são manuais/externas e default 0 (podem ser sobrescritas por fonte externa).
+        _t1_computers = {
+            "Elogios de atendimento / Feedback": _pct_compliments,
+            "NPS (Net Promoter Score)": _nps_score,
+            "Feedback Negativo (Penalidade)": _pct_negatives,
+            "Atendimentos | Ligações Finalizados": _count,
+        }
+        _t2_computers = {
+            "Avaliação Média": _avg_rating,
+            "Mensagens Totais": _total_msgs,
+        }
+        _zero = lambda a: 0
+
         rows_t1 = [
-            ["Elogios de atendimento / Feedback"] + [_pct_compliments(a) for a in agents],
-            ["NPS (Net Promoter Score)"] + [_nps_score(a) for a in agents],
-            ["Feedback Negativo (Penalidade)"] + [_pct_negatives(a) for a in agents],
-            ["Atendimentos | Ligações Finalizados"] + [_count(a) for a in agents],
-            # Manually tracked metrics (default to 0 — can be overridden via external data source)
-            ["Instalações e Migrações"] + [0] * len(agents),
-            ["Assiduidade (sem faltas)"] + [0] * len(agents),
-            ["Indicação Comercial"] + [0] * len(agents),
-            ["Indicação Comercial - Vendida"] + [0] * len(agents),
-            ["Updates, Treinamentos e Tarefas (N1 a N3)"] + [0] * len(agents),
+            [m["name"]] + [_t1_computers.get(m["name"], _zero)(a) for a in agents]
+            for m in t1_defs
         ]
 
         rows_t2 = [
-            ["Updates"] + [0] * len(agents),
-            ["Treinamentos"] + [0] * len(agents),
-            ["Tarefa N1"] + [0] * len(agents),
-            ["Tarefa N2"] + [0] * len(agents),
-            ["Tarefa N3"] + [0] * len(agents),
-            ["Avaliação Média"] + [_avg_rating(a) for a in agents],
-            ["Mensagens Totais"] + [_total_msgs(a) for a in agents],
+            [m["name"]] + [_t2_computers.get(m["name"], _zero)(a) for a in agents]
+            for m in t2_defs
         ]
 
         return DashboardDTO(

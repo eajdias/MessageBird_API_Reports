@@ -128,7 +128,7 @@ class ExcelExporter(ReportExporter):
 
         bsc_ws.write(0, 0, f"BALANCED SCORECARD — {dto.start_date} a {dto.end_date}", fmts["title"])
 
-        kpi_cfg = dto.bsc_kpi_config.get("Suporte Técnico", {"t1": [], "t2": []})
+        kpi_cfg = next(iter(dto.bsc_kpi_config.values()), {"t1": [], "t2": []})
 
         next_row = write_bsc_kpi_table(
             bsc_ws, 2, "Desempenho dos Agentes",
@@ -142,40 +142,27 @@ class ExcelExporter(ReportExporter):
             fmts, add_total_row=False
         )
 
-        self._write_bsc_legend(bsc_ws, workbook, start_row=next_row + 1)
+        self._write_bsc_legend(bsc_ws, workbook, kpi_cfg, start_row=next_row + 1)
 
-    def _write_bsc_legend(self, ws, workbook, start_row=36):
+    def _write_bsc_legend(self, ws, workbook, kpi_cfg, start_row=36):
         legend_fmt = workbook.add_format({"bold": True, "font_size": 13, "font_color": COLOR_PRIMARY})
         cat_title_fmt = workbook.add_format({"bold": True, "font_size": 11, "font_color": COLOR_PRIMARY, "bg_color": COLOR_SURFACE, "border": 1})
         item_fmt = workbook.add_format({"bold": True, "font_size": 11, "font_color": COLOR_PRIMARY})
         desc_fmt = workbook.add_format({"font_size": 11, "text_wrap": True})
 
-        legends = [
-            ("CATEGORIA: QUALIDADE E SATISFAÇÃO", "", True),
-            ("Elogios de atendimento / Feedback",
-             "Notas 4 e 5 = Feedback positivo. >=40% → 30 pts, >=35% → 15 pts, >=30% → 10 pts. Extra de 0,75 pts por 1% acima de 40%. Cap de 60 pts."),
-            ("NPS (Net Promoter Score)",
-             "NPS individual oficial. >=70 → 30 pts, >=63 → 15 pts, >=50 → 5 pts."),
-            ("Feedback Negativo (Penalidade)",
-             "Notas 1 e 2 = Feedback negativo. Base -5 pts se >10%. Extra -1 pt por 1% acima de 10%. Sem limite inferior."),
-            ("CATEGORIA: PRODUTIVIDADE E VOLUME", "", True),
-            ("Atendimentos | Ligações Finalizados",
-             "Volume bruto: Meta de 150 chats. Peso 10 pts. ~0,0667 pts por atendimento (10/150). Sem limite."),
-            ("Instalações e Migrações",
-             "Tickets finalizados. Meta de 10. Peso 30 pts. 3 pts por ticket."),
-            ("CATEGORIA: OPERACIONAL E COMERCIAL", "", True),
-            ("Assiduidade (sem faltas)",
-             "Métrica binária: 0 faltas/atrasos no mês garante 35 pts. Se houver falta, zera."),
-            ("Indicação Comercial",
-             "Proporcional: Meta de 10 indicações. Peso 50 pts. 5 pts por indicação."),
-            ("Indicação Comercial - Vendida",
-             "Proporcional: Meta de 10 vendas. Peso 100 pts. 10 pts por venda."),
-            ("Updates, Treinamentos e Tarefas (N1 a N3)",
-             "Cálculo automático baseado na Tabela 2. Meta 50 tarefas. Peso 50 pts. 1pt por update/treinamento, 2pt N1, 3pt N2, 5pt N3."),
-            ("CATEGORIA: PENALIDADES", "", True),
-            ("Ligações Perdidas (Setor)",
-             "Penalidade setorial: aplicada a todos os agentes do grupo. -2 pts por ligação perdida. Não é individual."),
-        ]
+        # Legenda gerada a partir do KPI_CONFIG (genérica para qualquer empresa)
+        legends = []
+        for section_label, key in (
+            ("QUALIDADE E SATISFAÇÃO", "t1"),
+            ("AVALIAÇÕES EXTRAS", "t2"),
+            ("PENALIDADES SETORIAIS", "penalidades_setoriais"),
+        ):
+            items = kpi_cfg.get(key, [])
+            if not items:
+                continue
+            legends.append((f"CATEGORIA: {section_label}", "", True))
+            for m in items:
+                legends.append((m.get("name", "?"), m.get("description", "")))
 
         row = start_row
         ws.merge_range(row, 0, row, 10, "LEGENDA E EXPLICAÇÃO DAS MÉTRICAS (GUIA DIRETORIA)", legend_fmt)
