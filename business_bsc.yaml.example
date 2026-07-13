@@ -67,3 +67,14 @@ METRIC_THRESHOLDS:
   sla_frt_seconds: 3600
   max_art_minutes: 480
   max_duration_minutes: 630
+
+# Metas de cor (RAG) do dashboard executivo.
+# direction: "higher" = quanto maior melhor; "lower" = quanto menor melhor.
+EXEC_TARGETS:
+  nps_real:            { green: 70, amber: 50, direction: higher }
+  sla_compliance:      { green: 90, amber: 80, direction: higher }
+  csat_elogio:         { green: 40, amber: 30, direction: higher }
+  art_medio:           { green: 15, amber: 30, direction: lower }
+  duracao_media:       { green: 30, amber: 60, direction: lower }
+  cobertura_avaliados: { green: 60, amber: 40, direction: higher }
+  cobertura_nps:       { green: 60, amber: 40, direction: higher }

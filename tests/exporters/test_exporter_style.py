@@ -127,8 +127,8 @@ class TestExporterStyle(unittest.TestCase):
             os.unlink(f.name)
 
     def test_tab_names_no_special_chars(self):
-        allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwXYZ0123456789 _-çãáàâéêíóôúü")
-        safe_names = ["Visão Geral", "BSC", "Desempenho Agentes", "Qualidade", "Demanda", "_data"]
+        allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-çãáàâéêíóôúü")
+        safe_names = ["Resumo Executivo", "Visão Geral", "BSC", "Desempenho Agentes", "Qualidade", "Demanda", "_data"]
         for name in safe_names:
             for c in name:
                 self.assertIn(c, allowed, f"Character '{c}' not allowed in tab name '{name}'")
@@ -170,6 +170,28 @@ class TestExporterStyle(unittest.TestCase):
         t1 = KPI_CONFIG.get("Suporte Técnico", {}).get("t1", [])
         atd = next(m for m in t1 if "Atendimentos" in m["name"])
         self.assertEqual(atd["peso"], 10)
+
+    def test_exec_targets_defined(self):
+        from domain.constants import EXEC_TARGETS
+        for key in ("nps_real", "sla_compliance", "csat_elogio", "art_medio", "cobertura_avaliados"):
+            self.assertIn(key, EXEC_TARGETS)
+            self.assertIn("direction", EXEC_TARGETS[key])
+
+    def test_load_bsc_config_exec_targets(self):
+        import tempfile
+        from infrastructure.config_loader import load_bsc_config
+        from domain import constants
+        original = constants.EXEC_TARGETS
+        yaml_text = "EXEC_TARGETS:\n  foo: { green: 1, amber: 2, direction: higher }\n"
+        with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+            f.write(yaml_text)
+            path = f.name
+        try:
+            load_bsc_config(path)
+            self.assertIn("foo", constants.EXEC_TARGETS)
+        finally:
+            constants.EXEC_TARGETS = original
+            os.unlink(path)
 
 
 if __name__ == "__main__":

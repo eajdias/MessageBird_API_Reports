@@ -3,6 +3,7 @@ import xlsxwriter
 from typing import List, Any, Dict
 from datetime import datetime
 from application.interfaces.exporter import ReportExporter, DashboardDTO
+from domain import constants
 
 logger = logging.getLogger("excel_exporter")
 
@@ -89,6 +90,7 @@ class ExcelExporter(ReportExporter):
 
     def export_executive_dashboard(self, filename: str, dto: DashboardDTO):
         workbook = xlsxwriter.Workbook(filename)
+        self._write_exec_summary_tab(workbook, dto)
         self._write_dashboard_tab(workbook, dto)
         if dto.bsc_header:
             self._write_bsc_tab(workbook, dto)
@@ -99,6 +101,7 @@ class ExcelExporter(ReportExporter):
 
     def export_annual_dashboard(self, filename: str, dto: DashboardDTO):
         workbook = xlsxwriter.Workbook(filename)
+        self._write_exec_summary_tab(workbook, dto)
         self._write_dashboard_tab(workbook, dto)
         if dto.bsc_header:
             self._write_bsc_tab(workbook, dto)
@@ -109,8 +112,157 @@ class ExcelExporter(ReportExporter):
         self._write_data_sheet(workbook, dto)
         workbook.close()
 
+    def _rag_color(self, target_key: str, value) -> str | None:
+        """Retorna a cor RAG (hex) para um valor conforme EXEC_TARGETS, ou None."""
+        t = constants.EXEC_TARGETS.get(target_key)
+        if not t or value is None:
+            return None
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            return None
+        green = t.get("green")
+        amber = t.get("amber")
+        direction = t.get("direction", "higher")
+        if direction == "lower":
+            if green is not None and v <= green:
+                return COLOR_ACCENT
+            if amber is not None and v <= amber:
+                return COLOR_WARNING
+            return COLOR_ALERT
+        if green is not None and v >= green:
+            return COLOR_ACCENT
+        if amber is not None and v >= amber:
+            return COLOR_WARNING
+        return COLOR_ALERT
+
+    def _build_exec_narrative(self, gm: dict, prev: dict) -> str:
+        """Gera o resumo executivo em 1-3 frases a partir das métricas gerais."""
+        parts = []
+
+        def _trend(cur, key):
+            p = prev.get(key)
+            if p is None or p == 0 or cur is None:
+                return ""
+            try:
+                change = ((float(cur) - float(p)) / float(p)) * 100
+            except (TypeError, ValueError):
+                return ""
+            arrow = "↑" if change > 0 else ("↓" if change < 0 else "→")
+            return f" {arrow} {abs(change):.1f}% vs mês ant."
+
+        nps = gm.get("real_nps")
+        if nps is not None:
+            tgt = constants.EXEC_TARGETS.get("nps_real", {}).get("green")
+            meta = f" (meta {tgt})" if tgt else ""
+            parts.append(f"NPS de {nps:.1f}{meta}{_trend(nps, 'real_nps')}.")
+        sla = gm.get("sla_compliance")
+        if sla is not None:
+            tgt = constants.EXEC_TARGETS.get("sla_compliance", {}).get("green")
+            meta = f" (meta {tgt}%)" if tgt else ""
+            parts.append(f"SLA de {sla}%{meta}{_trend(sla, 'sla_compliance')}.")
+        elog = gm.get("pct_compliments")
+        if elog not in (None, "N/A"):
+            parts.append(f"Elogio de {elog}%{_trend(elog, 'pct_compliments')}.")
+        cov = gm.get("pct_chats_avaliados")
+        if cov not in (None, "N/A"):
+            parts.append(f"Cobertura de avaliação de {cov}%{_trend(cov, 'pct_chats_avaliados')}.")
+        chats = gm.get("total_chats")
+        if chats:
+            parts.append(f"{chats} chats no período{_trend(chats, 'total_chats')}.")
+        return " ".join(parts) if parts else "Sem dados suficientes para o período."
+
+    def _write_exec_summary_tab(self, workbook: xlsxwriter.Workbook, dto: DashboardDTO):
+        ws = workbook.add_worksheet("Resumo Executivo")
+        gm = dto.general_metrics
+        prev = dto.prev_month_metrics or {}
+
+        def _safe_fmt(val, fmt=".2f"):
+            if val is None:
+                return "N/A"
+            try:
+                return f"{val:{fmt}}"
+            except Exception:
+                return str(val)
+
+        title_fmt = workbook.add_format({"bold": True, "font_size": 22, "align": "center", "font_color": COLOR_PRIMARY})
+        subtitle_fmt = workbook.add_format({"font_size": 11, "align": "center", "italic": True, "font_color": COLOR_TEXT_LIGHT})
+        section_fmt = workbook.add_format({"bold": True, "font_size": 13, "align": "left", "font_color": COLOR_PRIMARY, "bottom": 2})
+        card_label_fmt = workbook.add_format({
+            "bold": True, "font_size": 11, "border": 1, "align": "center", "valign": "vcenter",
+            "bg_color": COLOR_PRIMARY, "font_color": "#FFFFFF", "text_wrap": True
+        })
+        card_val_fmt = workbook.add_format({
+            "bold": True, "font_size": 24, "border": 1, "align": "center", "valign": "vcenter",
+            "bg_color": "#F0F4FA", "font_color": COLOR_PRIMARY
+        })
+        narrative_fmt = workbook.add_format({
+            "font_size": 12, "align": "left", "valign": "top", "text_wrap": True,
+            "border": 1, "bg_color": COLOR_SURFACE
+        })
+
+        ws.merge_range(0, 0, 0, 14, dto.title, title_fmt)
+        ws.merge_range(1, 0, 1, 14, f"Período: {dto.start_date} até {dto.end_date}", subtitle_fmt)
+
+        # ── Tiles RAG ──────────────────────────────────────────────────────────
+        tiles = [
+            ("NPS Real", _safe_fmt(gm.get("real_nps"), ".1f"), "real_nps", "nps_real"),
+            ("SLA Compliance", (f"{gm.get('sla_compliance')}%" if gm.get("sla_compliance") is not None else "N/A"), "sla_compliance", "sla_compliance"),
+            ("CSAT / Elogio", (f"{gm.get('pct_compliments')}%" if gm.get("pct_compliments") not in (None, "N/A") else "N/A"), "pct_compliments", "csat_elogio"),
+            ("ART Médio (min)", _safe_fmt(gm.get("avg_art")), "avg_art", "art_medio"),
+            ("Volume de Chats", f"{gm.get('total_chats', 0)}", "total_chats", None),
+            ("Cobertura (Nota)", (f"{gm.get('pct_chats_avaliados')}%" if gm.get("pct_chats_avaliados") not in (None, "N/A") else "N/A"), "pct_chats_avaliados", "cobertura_avaliados"),
+        ]
+
+        for i, (label, val, prev_key, target_key) in enumerate(tiles):
+            col_start = i * 3
+            color = self._rag_color(target_key, gm.get(prev_key))
+            val_fmt = card_val_fmt
+            if color is not None:
+                val_fmt = workbook.add_format({
+                    "bold": True, "font_size": 24, "border": 1, "align": "center",
+                    "valign": "vcenter", "bg_color": color, "font_color": "#FFFFFF"
+                })
+            ws.merge_range(3, col_start, 3, col_start + 2, label, card_label_fmt)
+            ws.merge_range(4, col_start, 5, col_start + 2, val, val_fmt)
+
+        # ── Narrativa automática ───────────────────────────────────────────────
+        ws.merge_range(7, 0, 7, 14, "RESUMO DO PERÍODO", section_fmt)
+        narrative = self._build_exec_narrative(gm, prev)
+        ws.merge_range(8, 0, 11, 14, narrative, narrative_fmt)
+
+        # ── Donut NPS compacto ─────────────────────────────────────────────────
+        data_sheet = workbook.add_worksheet("_data_resumo")
+        data_sheet.hide()
+        data_sheet.write(0, 0, "Categoria")
+        data_sheet.write(0, 1, "Quantidade")
+        nps_order = {"promoters": "Promotores", "passives": "Neutros", "detractors": "Detratores"}
+        for idx, (key, label) in enumerate(nps_order.items()):
+            data_sheet.write(idx + 1, 0, label)
+            data_sheet.write(idx + 1, 1, dto.nps_distribution.get(key, 0))
+        chart = workbook.add_chart({"type": "doughnut"})
+        chart.add_series({
+            "name": "NPS",
+            "categories": "='_data_resumo'!$A$2:$A$4",
+            "values": "='_data_resumo'!$B$2:$B$4",
+            "points": [
+                {"fill": {"color": COLOR_ACCENT}},
+                {"fill": {"color": COLOR_WARNING}},
+                {"fill": {"color": COLOR_ALERT}},
+            ],
+            "data_labels": {"percentage": True, "category": True, "position": "outside_end", "font": {"bold": True, "size": 11, "color": COLOR_TEXT}},
+        })
+        chart.set_title({"name": "Distribuição NPS", "name_font": {"bold": True, "size": 13, "color": COLOR_PRIMARY}})
+        chart.set_legend({"font": {"size": 11}})
+        chart.set_size({"width": 420, "height": 300})
+        ws.insert_chart(13, 0, chart, {"x_offset": 10, "y_offset": 10})
+
+        ws.set_column(0, 0, 28)
+        for c in range(1, 15):
+            ws.set_column(c, c, 16)
+
     def _write_bsc_tab(self, workbook: xlsxwriter.Workbook, dto: DashboardDTO):
-        from infrastructure.exporters._bsc_writer import write_bsc_kpi_table
+        from infrastructure.exporters._bsc_writer import write_bsc_kpi_table, _FIRST_AGENT_COL
         bsc_ws = workbook.add_worksheet("BSC")
 
         fmts = {
@@ -130,14 +282,24 @@ class ExcelExporter(ReportExporter):
 
         kpi_cfg = next(iter(dto.bsc_kpi_config.values()), {"t1": [], "t2": []})
 
-        next_row = write_bsc_kpi_table(
+        t1_end = write_bsc_kpi_table(
             bsc_ws, 2, "Desempenho dos Agentes",
             dto.bsc_header, dto.bsc_data_t1, kpi_cfg.get("t1", []),
             fmts, add_total_row=True
         )
+        total_row = t1_end - 1
+
+        # RAG no TOTAL KPI de cada agente (verde >= 0, vermelho < 0)
+        n_agents = len(dto.bsc_header) - 1
+        rag_green = workbook.add_format({"bg_color": COLOR_ACCENT, "font_color": "#FFFFFF", "bold": True})
+        rag_red = workbook.add_format({"bg_color": COLOR_ALERT, "font_color": "#FFFFFF", "bold": True})
+        for i in range(n_agents):
+            col = _FIRST_AGENT_COL + 2 * i + 1
+            bsc_ws.conditional_format(total_row, col, total_row, col, {"type": "cell", "criteria": ">=", "value": 0, "format": rag_green})
+            bsc_ws.conditional_format(total_row, col, total_row, col, {"type": "cell", "criteria": "<", "value": 0, "format": rag_red})
 
         next_row = write_bsc_kpi_table(
-            bsc_ws, next_row + 2, "Avaliações Extras",
+            bsc_ws, t1_end + 2, "Avaliações Extras",
             dto.bsc_header, dto.bsc_data_t2, kpi_cfg.get("t2", []),
             fmts, add_total_row=False
         )
@@ -280,10 +442,27 @@ class ExcelExporter(ReportExporter):
             ("% com NPS", (_safe_fmt(gm.get('pct_com_nps')) + "%") if gm.get('pct_com_nps') not in (None, "N/A") else "N/A", "pct_com_nps", True),
         ]
 
+        _RAG_KEY = {
+            "total_chats": None,
+            "avg_art": "art_medio",
+            "avg_duration": "duracao_media",
+            "real_nps": "nps_real",
+            "sla_compliance": "sla_compliance",
+            "pct_chats_avaliados": "cobertura_avaliados",
+            "pct_com_nps": "cobertura_nps",
+        }
+
         for i, (label, val, prev_key, higher_better) in enumerate(kpi_list):
             col_start = i * 3
+            color = self._rag_color(_RAG_KEY.get(prev_key), gm.get(prev_key))
+            v_fmt = card_val_fmt
+            if color is not None:
+                v_fmt = workbook.add_format({
+                    "bold": True, "font_size": 24, "border": 1, "align": "center",
+                    "valign": "vcenter", "bg_color": color, "font_color": "#FFFFFF"
+                })
             ws.merge_range(3, col_start, 3, col_start + 2, label, card_label_fmt)
-            ws.merge_range(4, col_start, 5, col_start + 2, val, card_val_fmt)
+            ws.merge_range(4, col_start, 5, col_start + 2, val, v_fmt)
             trend_text, trend_color = _trend(gm.get(prev_key), prev.get(prev_key), higher_better)
             if trend_text:
                 trend_fmt = workbook.add_format({

@@ -229,6 +229,18 @@ DEFAULT_METRIC_THRESHOLDS = {
     "max_duration_minutes": 630,
 }
 
+# Metas de cor (RAG) do dashboard executivo.
+# direction: "higher" = quanto maior melhor; "lower" = quanto menor melhor.
+DEFAULT_EXEC_TARGETS = {
+    "nps_real":            {"green": 70, "amber": 50, "direction": "higher"},
+    "sla_compliance":      {"green": 90, "amber": 80, "direction": "higher"},
+    "csat_elogio":         {"green": 40, "amber": 30, "direction": "higher"},
+    "art_medio":           {"green": 15, "amber": 30, "direction": "lower"},
+    "duracao_media":       {"green": 30, "amber": 60, "direction": "lower"},
+    "cobertura_avaliados": {"green": 60, "amber": 40, "direction": "higher"},
+    "cobertura_nps":       {"green": 60, "amber": 40, "direction": "higher"},
+}
+
 # ── Dynamic Configuration ──────────────
 
 DEPT_MAP = DEFAULT_DEPT_MAP
@@ -239,6 +251,7 @@ AGENTS = {}
 KPI_CONFIG = DEFAULT_KPI_CONFIG
 NPS_CONFIG = DEFAULT_NPS_CONFIG
 METRIC_THRESHOLDS = DEFAULT_METRIC_THRESHOLDS
+EXEC_TARGETS = DEFAULT_EXEC_TARGETS
 DEPT_ROUTING: dict[str, str] = {}
 
 # ── Helper functions ──────────────────────────────────────────────────────────

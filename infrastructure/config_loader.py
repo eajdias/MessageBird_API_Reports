@@ -71,5 +71,8 @@ def load_bsc_config(bsc_path: str):
         if "max_duration_minutes" in thresholds:
             constants.MAX_DURATION_MINUTES = int(thresholds["max_duration_minutes"])
 
+        if "EXEC_TARGETS" in bsc_config:
+            constants.EXEC_TARGETS = bsc_config["EXEC_TARGETS"]
+
     except Exception as e:
         print(f"Erro ao carregar configuração BSC: {e}")
