@@ -215,6 +215,18 @@ DEFAULT_KPI_CONFIG = {
     },
 }
 
+DEFAULT_NPS_CONFIG = {
+    "promoter_min": 9,
+    "passive_min": 7,
+}
+
+DEFAULT_METRIC_THRESHOLDS = {
+    "sla_frt_minutes": 60,
+    "sla_frt_seconds": 3600,
+    "max_art_minutes": 480,
+    "max_duration_minutes": 630,
+}
+
 # ── Dynamic Configuration ──────────────
 
 DEPT_MAP = DEFAULT_DEPT_MAP
@@ -223,6 +235,8 @@ OCCURRENCE_MAP = DEFAULT_OCCURRENCE_MAP
 LANG_MAP = DEFAULT_LANG_MAP
 AGENTS = {}
 KPI_CONFIG = DEFAULT_KPI_CONFIG
+NPS_CONFIG = DEFAULT_NPS_CONFIG
+METRIC_THRESHOLDS = DEFAULT_METRIC_THRESHOLDS
 DEPT_ROUTING: dict[str, str] = {}
 
 # ── Helper functions ──────────────────────────────────────────────────────────

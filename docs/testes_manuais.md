@@ -11,7 +11,7 @@ Antes de iniciar, certifique-se de que as dependências estão instaladas e o am
 uv sync
 
 # Copiar template de ambiente e editar com suas chaves de API
-cp config/.env.example config/.env
+cp .env.example .env
 ```
 
 ## 2. Fluxo de Sincronização (Sync)

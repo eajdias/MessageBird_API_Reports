@@ -8,9 +8,9 @@ Guia completo para configurar a ferramenta de relatorios MessageBird.
 
 Copie o arquivo de template e preencha com suas credenciais:
 ```
-cp config/.env.example config/.env
+cp .env.example .env
 ```
-(No Windows, use `Copy-Item config/.env.example config/.env`)
+(No Windows, use `Copy-Item .env.example .env`)
 
 ### Variaveis Obrigatorias
 
@@ -150,8 +150,10 @@ reports/
 
 ## 3. Como Atualizar a Configuracao
 
-1. Edite `config/business_config.json`
+1. Edite `business_config.json`
 2. Nao e necessario reiniciar nada
 3. As mudancas refletem na proxima geracao de relatorio
 
 > **Dica:** Agentes novos ja sao automaticamente criados no banco durante a sincronizacao. Basta adicionar o `bird_id` e `group` no `business_config.json` para que aparecam no relatorio correto.
+
+> **Nota:** Os parametros de BSC/NPS e thresholds de metricas (SLA, ART, duracao) ficam em `business_bsc.json`. Edite esse arquivo para ajustar metas, pesos e cortes do NPS.

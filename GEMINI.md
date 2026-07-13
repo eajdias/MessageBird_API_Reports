@@ -7,7 +7,7 @@ Este projeto segue rigorosamente a **Clean Architecture**. O Gemini CLI deve usa
 - `application/`: Orquestração, Use Cases, Interfaces e DTOs.
 - `infrastructure/`: Detalhes técnicos, Repositórios e Exporters (Excel/PDF).
 - `presentation/`: Ferramentas MCP e pontos de entrada CLI.
-- `config/`: Gestão de ambiente e segredos.
+- Arquivos de configuração na raiz: `.env` (segredos), `business_config.json` (mapas de negócio) e `business_bsc.json` (NPS/BSC/thresholds).
 - `tests/`: Padrões de teste e isolamento de banco.
 - `docs/`: Guia de arquitetura e evolução dos relatórios.
 

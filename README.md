@@ -17,8 +17,8 @@ Ferramenta autonoma para sincronizacao de dados e geracao de relatorios avancado
 
 ```
 # Copiar template de ambiente
-cp config/.env.example config/.env
-cp config/business_config.json.example config/business_config.json
+cp .env.example .env
+cp business_config.json.example business_config.json
 
 # Instalar dependencias
 uv sync

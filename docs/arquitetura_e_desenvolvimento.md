@@ -81,7 +81,7 @@ infrastructure/
 │   ├── excel_exporter.py # Exportacao Excel (xlsxwriter)
 │   ├── pdf_exporter.py   # Exportacao PDF (fpdf2)
 │   └── markdown_exporter.py # Exportacao README.md
-└── config_loader.py      # Leitura do business_config.json
+└── config_loader.py      # Leitura de business_config.json e business_bsc.json
 ```
 
 **Regra:** Onde frameworks e bibliotecas externas vivem. Nenhuma logica de negocio deve vazar para ca.
