@@ -67,10 +67,10 @@ Ao abrir os relatórios Excel, verifique:
 - [ ] **Aba Resumo:** O nome da aba deve estar correto (máx. 31 caracteres).
 - [ ] **Métricas ART:** Valores em minutos coerentes (não devem ser negativos ou excessivamente altos sem motivo).
 - [ ] **Cálculo de NPS:** Validar se a fórmula `(Promotores - Detratores) / Total` bate com a coluna "NPS Real".
-- [ ] **SLA:** Validar se a porcentagem de SLA reflete o atendimento dentro do threshold (ex: 5 min).
+- [ ] **SLA:** Validar se a porcentagem de SLA reflete o atendimento dentro do threshold (padrão 60 min, veja `METRIC_THRESHOLDS.sla_frt_minutes` em `business_bsc.yaml`).
 
 ## 6. Troubleshooting
 
 - **ModuleNotFoundError:** Certifique-se de usar `uv sync` primeiro e prefixar comandos com `uv run`.
-- **InvalidWorksheetName:** O sistema trunca automaticamente para 31 chars, mas nomes de grupos no `business_config.yaml` muito similares podem gerar conflito de arquivos.
+- **InvalidWorksheetName:** O sistema trunca automaticamente para 31 chars, mas nomes de grupos (definidos em `business_config.yaml` / `business_bsc.yaml`) muito similares podem gerar conflito de arquivos.
 - **SQLite Error (No such table):** Execute `uv run python main.py sync` para disparar a inicialização do schema.

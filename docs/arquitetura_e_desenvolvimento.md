@@ -100,7 +100,7 @@ presentation/
 ### Tratamento de Datas e Timezones
 
 1. **UTC no Banco:** Todos os dados armazenados em UTC
-2. **Local no Relatorio:** Conversao para fuso local (UTC-3) apenas na exibicao final, em `domain/logic.py`
+2. **Local no Relatorio:** Conversao para fuso local apenas na exibicao final, em `domain/logic.py`. O offset e' configuravel via `MESSAGEBIRD_TIMEZONE_OFFSET` (default `-3` = Brasilia) no `.env`.
 
 ### Evitando God Classes
 
@@ -130,8 +130,8 @@ presentation/
 # Instalar dependencias
 uv sync
 
-# Rodar testes
-uv run pytest tests/
+# Rodar testes (pytest NAO e dependencia direta; use --with)
+uv run --with pytest python -m pytest -q
 
 # Sincronizar dados de teste
 uv run python main.py sync --year 2026 --month 6 --db-path test.db
@@ -139,3 +139,11 @@ uv run python main.py sync --year 2026 --month 6 --db-path test.db
 # Gerar relatorio de teste
 uv run python main.py report --year 2026 --month 6 --db-path test.db
 ```
+
+## 6. Diretrizes para IA (opencode)
+
+O projeto acompanha diretrizes para o assistente de codigo opencode:
+- `AGENTS.md` (raiz): visao geral e catalogo de skills.
+- `.opencode/skills/`: `arch-guard`, `sync-maintainer`, `report-architect`, `add-business-metric` e `business-config`.
+
+Ative a skill correspondente ao contexto da tarefa (ex.: `business-config` para adaptar mapas/KPIs/ambiente a uma nova empresa, `arch-guard` para revisoes de arquitetura).

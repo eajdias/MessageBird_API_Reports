@@ -22,10 +22,11 @@ Copie os arquivos de template:
 ```
 cp .env.example .env
 cp business_config.yaml.example business_config.yaml
+cp business_bsc.yaml.example business_bsc.yaml
 ```
 (No Windows, use `Copy-Item .env.example .env`)
 
-Edite cada arquivo com suas credenciais e regras de negocio. Veja o guia detalhado em [configuracao.md](configuracao.md).
+Edite cada arquivo com suas credenciais e regras de negocio. Veja o guia detalhado em [configuracao.md](configuracao.md). Resuma as etapas de adaptação de configuração na skill `business-config` (`.opencode/skills/business-config`).
 
 ---
 
