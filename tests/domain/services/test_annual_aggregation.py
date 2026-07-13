@@ -23,7 +23,7 @@ class TestAnnualAggregation(unittest.TestCase):
             msgs.append(RawMessageData(
                 f"2024-03-01 10:{i+1:02d}:00", "sent", "1", agent
             ))
-        return RawConversationData(
+        raw = RawConversationData(
             id=cid, contact="Test", phone=phone,
             start_time=created, end_time=updated,
             queue_time=None, raw_created=created, raw_updated=updated,
@@ -33,6 +33,7 @@ class TestAnnualAggregation(unittest.TestCase):
             contact_reason="Problemas técnicos",
             occurrence="Pedal"
         )
+        return self.aggregator.process_conversation(raw)
 
     def test_aggregate_monthly_breakdown_empty(self):
         result = self.aggregator.aggregate_monthly_breakdown({})

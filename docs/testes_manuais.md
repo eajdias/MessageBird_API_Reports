@@ -72,5 +72,5 @@ Ao abrir os relatórios Excel, verifique:
 ## 6. Troubleshooting
 
 - **ModuleNotFoundError:** Certifique-se de usar `uv sync` primeiro e prefixar comandos com `uv run`.
-- **InvalidWorksheetName:** O sistema trunca automaticamente para 31 chars, mas nomes de grupos no `business_config.json` muito similares podem gerar conflito de arquivos.
+- **InvalidWorksheetName:** O sistema trunca automaticamente para 31 chars, mas nomes de grupos no `business_config.yaml` muito similares podem gerar conflito de arquivos.
 - **SQLite Error (No such table):** Execute `uv run python main.py sync` para disparar a inicialização do schema.

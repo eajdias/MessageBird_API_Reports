@@ -30,8 +30,8 @@ async def main():
     report_parser.add_argument("--to-date", type=str, default=None, help="Data final (YYYY-MM-DD) para relatório de período personalizado")
     report_parser.add_argument("--output-dir", default="reports", help="Pasta de saída")
     report_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
-    report_parser.add_argument("--config-path", default="business_config.json", help="Caminho para business_config.json")
-    report_parser.add_argument("--bsc-config-path", default="business_bsc.json", help="Caminho para business_bsc.json (NPS/BSC/thresholds)")
+    report_parser.add_argument("--config-path", default="business_config.yaml", help="Caminho para business_config.yaml (mapas de negócio)")
+    report_parser.add_argument("--bsc-config-path", default="business_bsc.yaml", help="Caminho para business_bsc.yaml (NPS/BSC/thresholds)")
     report_parser.add_argument("--skip-os", action="store_true", help="Pular Ordens de Serviço")
     report_parser.add_argument("--sector", default=None, help="Filtrar por um setor/grupo específico (ex: 'Comercial')")
 
@@ -39,8 +39,8 @@ async def main():
     total_parser = subparsers.add_parser("total", help="Gerar relatório total do sistema (todo o histórico)")
     total_parser.add_argument("--output-dir", default="reports", help="Pasta de saída")
     total_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
-    total_parser.add_argument("--config-path", default="business_config.json", help="Caminho para business_config.json")
-    total_parser.add_argument("--bsc-config-path", default="business_bsc.json", help="Caminho para business_bsc.json (NPS/BSC/thresholds)")
+    total_parser.add_argument("--config-path", default="business_config.yaml", help="Caminho para business_config.yaml (mapas de negócio)")
+    total_parser.add_argument("--bsc-config-path", default="business_bsc.yaml", help="Caminho para business_bsc.yaml (NPS/BSC/thresholds)")
     total_parser.add_argument("--skip-os", action="store_true", help="Pular Ordens de Serviço")
     total_parser.add_argument("--sector", default=None, help="Filtrar por um setor/grupo específico")
 

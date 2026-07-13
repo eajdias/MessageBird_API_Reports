@@ -23,7 +23,7 @@ Este guia descreve como adicionar um novo cálculo de métrica ao projeto, garan
     Em `domain/constants.py`, adicione o nome da métrica em `AGENTS_HEADER`, `DEPARTMENTS_HEADER` ou `GROUPS_HEADER` conforme necessário.
 
 3.  **Integrar no Agregador de Aplicação**:
-    Em `application/services/report_aggregator.py`, atualize `aggregate_agent_data` (ou crie um novo método) para processar a lista de conversas e invocar a `MetricsCalculator`.
+    Em `application/services/report_aggregator.py`, atualize `aggregate_statistics` (ou crie um novo método) para processar a lista de conversas e invocar a `MetricsCalculator`.
 
 4.  **Ajustar Mapeamento na Infraestrutura**:
     Em `infrastructure/database/sqlite_repository.py`, certifique-se de que os dados brutos necessários para o novo cálculo estão sendo extraídos e passados para a camada de aplicação.

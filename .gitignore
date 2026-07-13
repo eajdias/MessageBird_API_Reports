@@ -5,7 +5,9 @@ m_bird*
 *.pyc
 test_reports*
 *business_config.json
+*business_config.yaml
 *business_bsc.json
+*business_bsc.yaml
 *.env
 
 # CocoIndex Code (ccc)

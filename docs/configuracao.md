@@ -23,24 +23,13 @@ cp .env.example .env
 
 | Variavel | Padrao | Descricao |
 |:---------|:-------|:----------|
-| `MESSAGEBIRD_ENV` | `live` | Ambiente (`live`, `test`, `production`) |
 | `MESSAGEBIRD_DB_FILENAME` | `m_bird.db` | Nome do arquivo do banco |
-| `MESSAGEBIRD_RESULT_LIMIT` | `20` | Itens por pagina na API |
 | `MESSAGEBIRD_HTTP_TIMEOUT` | `30.0` | Timeout das requisicoes (segundos) |
-| `MESSAGEBIRD_TIMEZONE_OFFSET` | `-3` | Offset do fuso horario (UTC) |
-| `MESSAGEBIRD_LOG_LEVEL` | `INFO` | Nivel de log |
-
-### Configuracao de SLA
-
-| Variavel | Padrao | Descricao |
-|:---------|:-------|:----------|
-| `MESSAGEBIRD_SLA_FR_SECONDS` | `300` | Tempo maximo para primeira resposta (segundos) |
-| `MESSAGEBIRD_SLA_RES_HOURS` | `24` | Tempo maximo para resolucao (horas) |
-| `MESSAGEBIRD_SLA_MAX_MSGS` | `50` | Limite maximo de mensagens por conversa |
+| `MESSAGEBIRD_TIMEZONE_OFFSET` | `-3` | Offset do fuso horario (UTC). Ajuste para o fuso da sua empresa |
 
 ---
 
-## 2. Arquivo `business_config.json`
+## 2. Arquivo `business_config.yaml`
 
 E o "coracao" da configuracao de relatorios. Define como dados brutos se tornam informacoes compreensiveis.
 
@@ -48,10 +37,6 @@ E o "coracao" da configuracao de relatorios. Define como dados brutos se tornam 
 
 ```json
 {
-    "SYSTEM_MAP": {
-        "1": "NOME_DO_SISTEMA_A",
-        "2": "NOME_DO_SISTEMA_B"
-    },
     "DEPT_MAP": {
         "1": "Suporte Tecnico",
         "2": "Comercial",
@@ -95,9 +80,6 @@ E o "coracao" da configuracao de relatorios. Define como dados brutos se tornam 
 ```
 
 ### Descricao de Cada Campo
-
-#### `SYSTEM_MAP`
-Mapeia IDs de sistemas/softwares para nomes legiveis.
 
 #### `DEPT_MAP`
 Mapeia IDs de departamentos para nomes. Usado na triagem automatica (bot).
@@ -148,12 +130,32 @@ reports/
 
 ---
 
-## 3. Como Atualizar a Configuracao
+## 3. Arquivo `business_bsc.yaml` (NPS, BSC e thresholds)
 
-1. Edite `business_config.json`
+Centraliza os parametros de negocio que variam por empresa e devem ser ajustados sem tocar no codigo:
+
+- **`KPI_CONFIG`**: definicao das metricas do Balanced Scorecard (metas, pesos, tipo de calculo e faixas). Cada empresa define seus proprios KPIs, metas e pesos.
+- **`NPS_CONFIG`**: cortes do NPS — `promoter_min` (nota minima para promotor) e `passive_min` (minima para neutro/passivo). Detratores sao as notas abaixo de `passive_min`.
+- **`METRIC_THRESHOLDS`**: limites de SLA/ART/duracao usados nos calculos (`sla_frt_minutes`, `sla_frt_seconds`, `max_art_minutes`, `max_duration_minutes`).
+
+Exemplo:
+
+```json
+{
+  "KPI_CONFIG": { "Suporte Tecnico": { "t1": [ ... ], "t2": [ ... ], "penalidades_setoriais": [ ... ] } },
+  "NPS_CONFIG": { "promoter_min": 9, "passive_min": 7 },
+  "METRIC_THRESHOLDS": { "sla_frt_minutes": 60, "sla_frt_seconds": 3600, "max_art_minutes": 480, "max_duration_minutes": 630 }
+}
+```
+
+> **Nota:** Para reutilizar o projeto em outra empresa, basta adaptar `business_config.yaml` (mapas de departamento/motivos/agentes) e `business_bsc.yaml` (KPIs, metas e cortes). O fuso horario e credenciais ficam em `.env`.
+
+---
+
+## 4. Como Atualizar a Configuracao
+
+1. Edite `business_config.yaml` e/ou `business_bsc.yaml`
 2. Nao e necessario reiniciar nada
 3. As mudancas refletem na proxima geracao de relatorio
 
-> **Dica:** Agentes novos ja sao automaticamente criados no banco durante a sincronizacao. Basta adicionar o `bird_id` e `group` no `business_config.json` para que aparecam no relatorio correto.
-
-> **Nota:** Os parametros de BSC/NPS e thresholds de metricas (SLA, ART, duracao) ficam em `business_bsc.json`. Edite esse arquivo para ajustar metas, pesos e cortes do NPS.
+> **Dica:** Agentes novos ja sao automaticamente criados no banco durante a sincronizacao. Basta adicionar o `bird_id` e `group` no `business_config.yaml` para que aparecam no relatorio correto.

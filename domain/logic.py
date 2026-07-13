@@ -1,8 +1,10 @@
+import os
 from datetime import datetime, timedelta, time
 from typing import Tuple, Optional, List, Dict, Any
 
 # Business logic for time handling (Canonical)
-TIMEZONE_OFFSET = -3
+# Lido do .env (MESSAGEBIRD_TIMEZONE_OFFSET); default -3 (Brasília) para compatibilidade.
+TIMEZONE_OFFSET = float(os.getenv("MESSAGEBIRD_TIMEZONE_OFFSET", "-3"))
 
 def parse_datetime(dt_string: Optional[str], apply_offset: bool = False) -> Optional[datetime]:
     if not dt_string:
@@ -64,11 +66,12 @@ def calculate_business_duration(start_dt: datetime, end_dt: datetime) -> float:
         return 0.0
 
     delta = (end_dt - start_dt).total_seconds() / 60.0
-    
-    # Cap at 480 minutes (8 hours) as per business rules for response times
-    if delta > 480:
+
+    from domain.constants import MAX_ART_MINUTES
+    # Cap conforme limite de ART externalizado (METRIC_THRESHOLDS.max_art_minutes)
+    if delta > MAX_ART_MINUTES:
         return 0.0
-        
+
     return delta
 
 def _get_val(obj, keys, default=None):

@@ -18,7 +18,7 @@ Ferramenta autonoma para sincronizacao de dados e geracao de relatorios avancado
 ```
 # Copiar template de ambiente
 cp .env.example .env
-cp business_config.json.example business_config.json
+cp business_config.yaml.example business_config.yaml
 
 # Instalar dependencias
 uv sync
@@ -122,7 +122,7 @@ uv run python main.py sync --help
 ## Documentacao Completa
 
 - [Guia de Uso](docs/guia_de_uso.md) - Instrucoes detalhadas de cada comando
-- [Configuracao](docs/configuracao.md) - Como preencher `.env` e `business_config.json`
+- [Configuracao](docs/configuracao.md) - Como preencher `.env` e `business_config.yaml`
 - [Arquitetura](docs/arquitetura_e_desenvolvimento.md) - Padroes e estrutura do codigo
 - [Testes Manuais](docs/testes_manuais.md) - Procedimentos de teste
 

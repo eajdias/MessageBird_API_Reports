@@ -21,7 +21,7 @@ Antes de usar, configure dois arquivos:
 Copie os arquivos de template:
 ```
 cp .env.example .env
-cp business_config.json.example business_config.json
+cp business_config.yaml.example business_config.yaml
 ```
 (No Windows, use `Copy-Item .env.example .env`)
 
