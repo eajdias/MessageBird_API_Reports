@@ -247,8 +247,8 @@ class ExcelExporter(ReportExporter):
         table_alt_num_fmt = workbook.add_format({"border": 1, "bg_color": COLOR_SURFACE, "font_size": 11, "align": "center", "valign": "vcenter"})
 
         # ── Título + Período ─────────────────────────────────────────────────
-        ws.merge_range(0, 0, 0, 14, dto.title, title_fmt)
-        ws.merge_range(1, 0, 1, 14, f"Período: {dto.start_date} até {dto.end_date}", subtitle_fmt)
+        ws.merge_range(0, 0, 0, 20, dto.title, title_fmt)
+        ws.merge_range(1, 0, 1, 20, f"Período: {dto.start_date} até {dto.end_date}", subtitle_fmt)
 
         # ── KPI Cards with MoM Trend ─────────────────────────────────────────
         prev = dto.prev_month_metrics or {}
@@ -276,6 +276,8 @@ class ExcelExporter(ReportExporter):
             ("Duração Média (min)", _safe_fmt(gm.get('avg_duration')), "avg_duration", False),
             ("NPS Real", _safe_fmt(gm.get('real_nps'), ".1f"), "real_nps", True),
             ("SLA Compliance", (_safe_fmt(gm.get('sla_compliance')) + "%") if gm.get('sla_compliance') is not None else "N/A", "sla_compliance", True),
+            ("% Chats Avaliados", (_safe_fmt(gm.get('pct_chats_avaliados')) + "%") if gm.get('pct_chats_avaliados') not in (None, "N/A") else "N/A", "pct_chats_avaliados", True),
+            ("% com NPS", (_safe_fmt(gm.get('pct_com_nps')) + "%") if gm.get('pct_com_nps') not in (None, "N/A") else "N/A", "pct_com_nps", True),
         ]
 
         for i, (label, val, prev_key, higher_better) in enumerate(kpi_list):
@@ -431,13 +433,13 @@ class ExcelExporter(ReportExporter):
         # ── Rodapé ────────────────────────────────────────────────────────────
         gen_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         footer_row = dept_end + 42
-        ws.merge_range(footer_row, 0, footer_row, 14,
+        ws.merge_range(footer_row, 0, footer_row, 20,
                        f"Gerado em {gen_time} | Fonte: Omnichannel MCP | Período: {dto.start_date} a {dto.end_date}",
                        footer_fmt)
 
         # Column widths
         ws.set_column(0, 0, 28)
-        for c in range(1, 10):
+        for c in range(1, 21):
             ws.set_column(c, c, 16)
 
     def _write_quality_tab(self, workbook: xlsxwriter.Workbook, dto: DashboardDTO):

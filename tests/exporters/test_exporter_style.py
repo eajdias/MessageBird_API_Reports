@@ -162,9 +162,9 @@ class TestExporterStyle(unittest.TestCase):
     def test_feedback_negativo_threshold_updated(self):
         t1 = KPI_CONFIG.get("Suporte Técnico", {}).get("t1", [])
         fn = next(m for m in t1 if "Negativo" in m["name"])
-        self.assertEqual(fn["threshold"], 10)
-        self.assertIsNone(fn.get("cap"))
-        self.assertEqual(fn["extra_peso"], -1)
+        self.assertEqual(fn["threshold"], 5)
+        self.assertEqual(fn.get("cap"), -30)
+        self.assertEqual(fn["extra_peso"], -5)
 
     def test_atendimentos_peso_updated(self):
         t1 = KPI_CONFIG.get("Suporte Técnico", {}).get("t1", [])

@@ -69,12 +69,14 @@ class ReportAggregator:
         compliments = sum(1 for p in processed_data if p.is_compliment)
         negatives = sum(1 for p in processed_data if p.is_negative)
         total_ratings = len(ratings)
-        
+        nps_count = len(nps_scores)
+        total_chats = len(processed_data)
+
         # Count unique contacts and returners (contacts with >1 chat)
         contacts = Counter(p.contact_id for p in processed_data if p.contact_id)
         unique_clients = len(contacts)
         returners = sum(1 for count in contacts.values() if count > 1)
-        
+
         return {
             "avg_rating": MetricsCalculator.calculate_rating_average(ratings),
             "avg_nps": MetricsCalculator.calculate_average(nps_scores),
@@ -82,12 +84,14 @@ class ReportAggregator:
             "avg_art": MetricsCalculator.calculate_average(arts),
             "avg_duration": MetricsCalculator.calculate_average(durations),
             "sla_compliance": MetricsCalculator.calculate_sla_rate(arts, threshold=constants.SLA_FRT_THRESHOLD_MINUTES),
-            "total_chats": len(processed_data),
+            "total_chats": total_chats,
             "total_msgs": sum(p.msg_count for p in processed_data),
             "compliments": compliments,
             "negatives": negatives,
-            "pct_compliments": round(compliments / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
-            "pct_negatives": round(negatives / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
+            "pct_compliments": round(compliments / total_chats * 100, 2) if total_chats > 0 else "N/A",
+            "pct_negatives": round(negatives / total_chats * 100, 2) if total_chats > 0 else "N/A",
+            "pct_chats_avaliados": round(total_ratings / total_chats * 100, 2) if total_chats > 0 else "N/A",
+            "pct_com_nps": round(nps_count / total_chats * 100, 2) if total_chats > 0 else "N/A",
             "unique_clients": unique_clients,
             "returners": returners
         }
@@ -113,19 +117,23 @@ class ReportAggregator:
 
         def _pct_compliments(agent):
             p_list = agent_map[agent]
-            ratings = [p.rating for p in p_list if p.rating is not None]
-            elogios = sum(1 for r in ratings if r >= 4)
-            if not ratings:
+            total = len(p_list)
+            if total == 0:
                 return None
-            return round(elogios / len(ratings) * 100, 1)
+            elogios = sum(1 for p in p_list if p.rating is not None and p.rating >= 4)
+            pct = elogios / total * 100  # denominador = total de atendimentos (item 2)
+            avaliados = sum(1 for p in p_list if p.rating is not None)
+            cobertura = avaliados / total  # item 4: ponderar por cobertura
+            fator = min(1.0, cobertura * 2)  # 50% de cobertura já satura o fator
+            return round(pct * fator, 1)
 
         def _pct_negatives(agent):
             p_list = agent_map[agent]
-            ratings = [p.rating for p in p_list if p.rating is not None]
-            neg = sum(1 for r in ratings if r <= 2)
-            if not ratings:
+            total = len(p_list)
+            if total == 0:
                 return None
-            return round(neg / len(ratings) * 100, 1)
+            neg = sum(1 for p in p_list if p.rating is not None and p.rating <= 2)
+            return round(neg / total * 100, 1)
 
         def _nps_score(agent):
             nps_scores = [p.nps for p in agent_map[agent] if p.nps is not None]
@@ -140,6 +148,22 @@ class ReportAggregator:
 
         def _count(agent):
             return len(agent_map[agent])
+
+        def _pct_avaliados(agent):
+            p_list = agent_map[agent]
+            total = len(p_list)
+            if total == 0:
+                return None
+            avaliados = sum(1 for p in p_list if p.rating is not None)
+            return round(avaliados / total * 100, 1)
+
+        def _pct_com_nps(agent):
+            p_list = agent_map[agent]
+            total = len(p_list)
+            if total == 0:
+                return None
+            com_nps = sum(1 for p in p_list if p.nps is not None)
+            return round(com_nps / total * 100, 1)
 
         kpi_cfg = next(iter(constants.KPI_CONFIG.values()), {})
         t1_defs = kpi_cfg.get("t1", [])
@@ -156,6 +180,8 @@ class ReportAggregator:
         _t2_computers = {
             "Avaliação Média": _avg_rating,
             "Mensagens Totais": _total_msgs,
+            "% Chats Avaliados (Nota)": _pct_avaliados,
+            "% Atendimentos com NPS": _pct_com_nps,
         }
         _zero = lambda a: 0
 
