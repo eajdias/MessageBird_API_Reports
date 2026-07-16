@@ -90,33 +90,6 @@ def _get_datetime(obj, keys, apply_offset=True):
     val = _get_val(obj, keys)
     return parse_datetime(val, apply_offset=apply_offset)
 
-def calculate_time_to_first_human(messages: List[Any]) -> Optional[float]:
-    """Calculates minutes from last bot interaction (or ticket start) to first human agent message."""
-    # Logic: Find last message before first human message. 
-    # If ticket start, use ticket start time.
-    # Keep it KISS: First human agent message - First received/bot message
-    first_human_dt = None
-    last_bot_dt = None
-    
-    for msg in messages:
-        direction = _get_val(msg, ["direction", "msgs_direction"], "")
-        created = _get_datetime(msg, ["createdDatetime", "msgs_created"])
-        agent_name = _get_val(msg, ["agnt_name", "agent_name"], None)
-        
-        if not created: continue
-        
-        is_human = agent_name and not (agent_name.lower() in ["sistema", "bot", "robot"])
-        
-        if is_human and first_human_dt is None:
-            first_human_dt = created
-        elif not is_human and first_human_dt is None:
-            last_bot_dt = created
-            
-    if first_human_dt:
-        start_dt = last_bot_dt or first_human_dt # Fallback to same time if no bot msg
-        return calculate_business_duration(start_dt, first_human_dt)
-    return None
-
 def calculate_ticket_duration(created_at: str, updated_at: str) -> float:
     """Calculates minutes from ticket open to ticket close."""
     c_dt = parse_datetime(created_at, apply_offset=True)
@@ -171,27 +144,4 @@ def get_effective_start_time(messages: List[Any], default_start: str) -> str:
             break
             
     return last_customer_msg_time or default_start
-
-def calculate_churn_score(last_contact_at: Optional[str]) -> float:
-    """
-    Business logic for contact churn score.
-    Replaces SQL CASE/julianday logic to ensure Domain verticality.
-    """
-    if not last_contact_at:
-        return 0.0
-    
-    # Bird timestamps are UTC. parse_datetime(..., apply_offset=False) returns naive UTC.
-    dt_utc = parse_datetime(last_contact_at, apply_offset=False)
-    if not dt_utc:
-        return 0.0
-    
-    from datetime import timezone
-    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
-    days_since = (now_utc - dt_utc).days
-    
-    if days_since > 60:
-        return 1.0
-    if days_since > 30:
-        return 0.5
-    return 0.0
 

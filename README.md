@@ -66,6 +66,15 @@ uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26
 | `uv run python main.py sync --messages-days 1` | Diário (último dia com mensagens) | Cron diário |
 | `uv run python main.py sync --year 2026 --month 6` | Mês específico (conversas + mensagens) | Backfill de um mês |
 | `uv run python main.py sync --messages-days 7` | Últimos N dias com mensagens | Período personalizado |
+| `uv run python main.py sync --full` | Sync estrutural completo | Primeira vez ou correção |
+| `uv run python main.py sync --full-messages` | Sync completo incluindo todas mensagens | Re-sincronizar tudo |
+| `uv run python main.py sync --backfill-surveys` | Re-extrair NPS e avaliações | Corrigir dados de avaliação |
+
+**Flags adicionais:**
+- `--lookback N` — Minutos de retrocesso para sync incremental (default: 60)
+- `--full` — Sync estrutural completo (contatos, agentes, conversas)
+- `--full-messages` — Sync completo incluindo todas as mensagens
+- `--backfill-surveys` — Re-extrair NPS e avaliações de conversas existentes
 
 ### Geração de Relatórios
 
@@ -75,6 +84,7 @@ uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26
 | `uv run python main.py report --from-date 2026-05-25 --to-date 2026-06-26` | Período personalizado | `reports/20260525_20260626/` |
 | `uv run python main.py report --year 2026` | Relatório anual consolidado | `reports/2026/` |
 | `uv run python main.py total` | Todo o histórico do banco | `reports/total/` |
+| `uv run python main.py quality` | Relatório de qualidade dos dados | `reports/qualidade_dados/` |
 
 Filtre por setor com `--sector "Nome do Setor"`:
 
@@ -101,6 +111,14 @@ reports/2026/2026-06/
       OS/                                    # PDFs individuais
   Comercial/
     ...
+```
+
+### Relatório de Qualidade
+
+```
+reports/qualidade_dados/
+  qualidade_dados.xlsx                       # Métricas de integridade
+  README.md                                  # Resumo da qualidade
 ```
 
 ### Relatório Anual / Período / Total

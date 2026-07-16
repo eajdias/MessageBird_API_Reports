@@ -12,6 +12,7 @@ from infrastructure.database.sqlite_repository import SqliteReportRepository
 from infrastructure.exporters.excel_exporter import ExcelExporter
 from application.use_cases.generate_report import GenerateReportUseCase
 from application.use_cases.sync_database import SyncDatabaseUseCase
+from application.use_cases.data_quality_report import DataQualityReportUseCase
 from domain import constants
 from presentation import terminal
 
@@ -54,6 +55,14 @@ async def main():
     sync_parser.add_argument("--month", type=int, default=None, help="Mês para backfill mensal")
     sync_parser.add_argument("--backfill-surveys", action="store_true", help="Re-extrair NPS e avaliações de conversas existentes")
     sync_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
+
+    # Quality parser
+    quality_parser = subparsers.add_parser("quality", help="Gerar relatório de qualidade de dados")
+    quality_parser.add_argument("--output-dir", default="reports", help="Pasta de saída")
+    quality_parser.add_argument("--db-path", default="m_bird.db", help="Caminho para o arquivo .db")
+    quality_parser.add_argument("--config-path", default="business_config.yaml", help="Caminho para business_config.yaml")
+    quality_parser.add_argument("--from-date", type=str, default=None, help="Data inicial (YYYY-MM-DD)")
+    quality_parser.add_argument("--to-date", type=str, default=None, help="Data final (YYYY-MM-DD)")
 
     args = parser.parse_args()
 
@@ -170,6 +179,29 @@ async def main():
             db_path=args.db_path
         )
         terminal.console.print(f"[bold green]Resultado:[/] {result}")
+
+    elif args.command == "quality":
+        load_and_configure_business(args.config_path)
+
+        db_conn = DatabaseConnection(args.db_path)
+        repository = SqliteReportRepository(db_conn)
+        exporter = ExcelExporter()
+        use_case = DataQualityReportUseCase(repository, exporter)
+
+        terminal.print_panel(
+            f"Gerando Relatório de Qualidade de Dados\n"
+            f"DB: {args.db_path}",
+            title="Data Quality Report"
+        )
+
+        result = await use_case.execute(
+            args.output_dir,
+            start_date=args.from_date,
+            end_date=args.to_date
+        )
+
+        if result:
+            terminal.console.print("[bold green]Relatório de qualidade de dados gerado com sucesso![/]")
 
 if __name__ == "__main__":
     asyncio.run(main())

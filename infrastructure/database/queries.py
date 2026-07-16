@@ -41,6 +41,8 @@ SURVEY_DATA_METADATA_QUERY = """
         cv.cnvs_rating_nps,
         cv.cnvs_contact_reason,
         cv.cnvs_occurrence,
+        cv.cnvs_channel,
+        cv.cnvs_description,
         m.msgs_id,
         m.msgs_created,
         m.msgs_direction,
@@ -109,10 +111,6 @@ SELECT
     ct.cnts_id,
     ct.cnts_name,
     ct.cnts_phone,
-    ct.cnts_custom1,
-    ct.cnts_custom2,
-    ct.cnts_custom3,
-    ct.cnts_custom4,
     a.agnt_name
 FROM conversations c
 LEFT JOIN contacts ct ON ct.cnts_id = c.cnvs_cnts
@@ -152,6 +150,8 @@ SURVEY_DATA_METADATA_QUERY_ALL = """
         cv.cnvs_rating_nps,
         cv.cnvs_contact_reason,
         cv.cnvs_occurrence,
+        cv.cnvs_channel,
+        cv.cnvs_description,
         m.msgs_id,
         m.msgs_created,
         m.msgs_direction,
@@ -184,10 +184,6 @@ SELECT
     ct.cnts_id,
     ct.cnts_name,
     ct.cnts_phone,
-    ct.cnts_custom1,
-    ct.cnts_custom2,
-    ct.cnts_custom3,
-    ct.cnts_custom4,
     a.agnt_name
 FROM conversations c
 LEFT JOIN contacts ct ON ct.cnts_id = c.cnvs_cnts

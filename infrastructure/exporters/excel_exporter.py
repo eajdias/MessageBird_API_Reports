@@ -178,37 +178,6 @@ class ExcelExporter(ReportExporter):
             ws.merge_range(row, 1, row, 10, desc, desc_fmt)
             row += 1
 
-    def _write_tabular_tab(self, workbook: xlsxwriter.Workbook, header: List[str], data: List[List[Any]]):
-        worksheet = workbook.add_worksheet("Desempenho Agentes")
-
-        header_fmt = workbook.add_format({
-            "bold": True, "bg_color": COLOR_PRIMARY, "font_color": "#FFFFFF", "border": 1, "font_size": 11, "align": "center", "valign": "vcenter"
-        })
-        cell_fmt = workbook.add_format({"border": 1, "font_size": 10, "align": "left"})
-        alt_fmt = workbook.add_format({"border": 1, "bg_color": COLOR_SURFACE, "font_size": 10, "align": "left"})
-        good_fmt = workbook.add_format({"bg_color": "#C6EFCE", "font_color": "#006100", "border": 1})
-        bad_fmt = workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006", "border": 1})
-
-        for col, h in enumerate(header):
-            worksheet.write(0, col, h, header_fmt)
-
-        for row_idx, row_data in enumerate(data):
-            fmt = alt_fmt if row_idx % 2 == 0 else cell_fmt
-            for col_idx, val in enumerate(row_data):
-                worksheet.write(row_idx + 1, col_idx, val, fmt)
-
-        for col, h in enumerate(header):
-            if any(term in h for term in ["ART", "FRT"]):
-                worksheet.conditional_format(1, col, len(data), col, {"type": "cell", "criteria": ">", "value": 30.0, "format": bad_fmt})
-                worksheet.conditional_format(1, col, len(data), col, {"type": "cell", "criteria": "<=", "value": 15.0, "format": good_fmt})
-            if "SLA" in h:
-                worksheet.conditional_format(1, col, len(data), col, {"type": "cell", "criteria": "<", "value": 90.0, "format": bad_fmt})
-                worksheet.conditional_format(1, col, len(data), col, {"type": "cell", "criteria": ">=", "value": 95.0, "format": good_fmt})
-
-        auto_width(worksheet, header, data)
-        worksheet.autofilter(0, 0, len(data), len(header) - 1)
-        worksheet.freeze_panes(1, 0)
-
     def _write_dashboard_tab(self, workbook: xlsxwriter.Workbook, dto: DashboardDTO):
         ws = workbook.add_worksheet("Visão Geral")
         gm = dto.general_metrics

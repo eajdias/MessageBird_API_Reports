@@ -54,7 +54,10 @@ class SqliteReportRepository(ReportRepository):
                     occurrence=constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"]),
                     metadata={
                         "agent_name": conv_agnt_name,
-                        "software": r["cnvs_software"]
+                        "software": r["cnvs_software"],
+                        "channel": r["cnvs_channel"],
+                        "channel_name": constants.resolve_channel(r["cnvs_channel"]),
+                        "description": r["cnvs_description"]
                     }
                 )
             else:
@@ -172,7 +175,10 @@ class SqliteReportRepository(ReportRepository):
                     occurrence=constants.resolve_occurrence(r["cnvs_dept"], r["cnvs_contact_reason"], r["cnvs_occurrence"]),
                     metadata={
                         "agent_name": conv_agnt_name,
-                        "software": r["cnvs_software"]
+                        "software": r["cnvs_software"],
+                        "channel": r["cnvs_channel"],
+                        "channel_name": constants.resolve_channel(r["cnvs_channel"]),
+                        "description": r["cnvs_description"]
                     }
                 )
             else:

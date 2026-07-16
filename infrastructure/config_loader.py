@@ -32,6 +32,8 @@ def load_and_configure_business(config_path: str):
             constants.OCCURRENCE_MAP = _keys_to_int(custom_config["OCCURRENCE_MAP"])
         if "LANG_MAP" in custom_config:
             constants.LANG_MAP = _keys_to_int(custom_config["LANG_MAP"])
+        if "CHANNEL_MAP" in custom_config:
+            constants.CHANNEL_MAP = custom_config["CHANNEL_MAP"]
         if "AGENTS" in custom_config:
             constants.AGENTS = custom_config["AGENTS"]
         if "KPI_CONFIG" in custom_config:

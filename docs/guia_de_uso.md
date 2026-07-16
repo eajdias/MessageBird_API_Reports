@@ -36,7 +36,7 @@ O banco local (`m_bird.db`) precisa ser sincronizado com a API da MessageBird an
 
 ### 2.1 Sincronizacao Incremental (Cron Job)
 
-Puxa apenas conversas atualizadas nos ultimos 60 minutos. Ideal para rodar periodicamente:
+Puxa apenas conversas atualizadas nos ultimos 60 minutos (configuravel com `--lookback`). Ideal para rodar periodicamente:
 
 ```
 uv run python main.py sync
@@ -67,6 +67,40 @@ Para sincronizar um periodo especifico (ex:ultimos 30 dias com mensagens):
 ```
 uv run python main.py sync --messages-days 30
 ```
+
+### 2.5 Sincronizacao Estrutural Completa
+
+Sincroniza todos os contatos, agentes e conversas (sem mensagens detalhadas):
+
+```
+uv run python main.py sync --full
+```
+
+### 2.6 Sincronizacao Completa com Mensagens
+
+Sincroniza tudo incluindo todas as mensagens (pode demorar):
+
+```
+uv run python main.py sync --full-messages
+```
+
+### 2.7 Re-extracao de Avaliacoes (Backfill Surveys)
+
+Re-extrai NPS e avaliacoes de conversas existentes no banco:
+
+```
+uv run python main.py sync --backfill-surveys
+```
+
+### 2.8 Flags Adicionais
+
+| Flag | Descrição | Default |
+|:-----|:----------|:--------|
+| `--lookback N` | Minutos de retrocesso para sync incremental | 60 |
+| `--full` | Sync estrutural completo | false |
+| `--full-messages` | Sync completo incluindo todas mensagens | false |
+| `--backfill-surveys` | Re-extrair NPS e avaliacoes | false |
+| `--db-path` | Caminho para o banco SQLite | m_bird.db |
 
 ---
 
@@ -115,6 +149,24 @@ uv run python main.py total
 # Filtrado
 uv run python main.py total --sector "Financeiro"
 ```
+
+### 3.5 Relatorio de Qualidade dos Dados
+
+Gera relatorio de integridade e qualidade dos dados no banco:
+
+```
+uv run python main.py quality
+```
+
+**Saidas geradas:**
+- `reports/qualidade_dados/qualidade_dados.xlsx` — Metricas de integridade
+- `reports/qualidade_dados/README.md` — Resumo da qualidade
+
+**Metricas avaliadas:**
+- Campos nulos ou ausentes
+- Duplicatas
+- Inconsistencias entre tabelas
+- Cobertura de avaliacoes e NPS
 
 ---
 
@@ -165,6 +217,16 @@ reports/
 reports/
 └── total/
     ├── Dashboard_Executivo_TOTAL_SISTEMA.xlsx
+    ├── README.md
+    └── ...
+```
+
+### Relatorio de Qualidade (`uv run python main.py quality`)
+
+```
+reports/
+└── qualidade_dados/
+    ├── qualidade_dados.xlsx
     ├── README.md
     └── ...
 ```

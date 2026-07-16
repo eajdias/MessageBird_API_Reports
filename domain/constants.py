@@ -45,20 +45,7 @@ DEPARTMENTS_HEADER = [
     "Nota Técnica Média",
     "Clientes Únicos",
     "Retornantes",
-]
-
-GROUPS_HEADER = [
-    "Grupo",
-    "Total de Chats",
-    "Total de Msgs",
-    "ART Médio (min)",
-    "SLA Compliance (%)",
-    "Duração Média (min)",
-    "NPS Médio",
-    "NPS Real",
-    "Nota Técnica Média",
-    "Clientes Únicos",
-    "Retornantes",
+    "Taxa de Avaliação (%)",
 ]
 
 # ── Audit report headers ──────────────────────────────────────────────────────
@@ -142,75 +129,99 @@ ANNUAL_HEADER = [
 
 # ── Default Maps ─────────────────────────────────────────────────────────────
 DEFAULT_DEPT_MAP = {
-    1: "Suporte Técnico",
+    1: "Suporte Tecnico",
     2: "Comercial",
     3: "Financeiro",
     4: "Ouvidoria",
-    5: "Customer Success",
+    5: "Nova Instalacao | Migracao",
 }
 
 DEFAULT_REASON_MAP = {
-    1: {1: "Problemas técnicos", 2: "Agendamentos", 3: "Manuais de uso (PDF ou vídeos)"},
-    2: {1: "Falar com um consultor comercial", 2: "Agendar uma demonstração"},
-    3: {1: "Boleto", 2: "Nota Fiscal", 3: "Sistema bloqueado", 4: "Mensagem de cobrança", 5: "Não consta"},
-    4: {1: "Reclamação", 2: "Sugestão", 3: "Elogio"},
-    5: {1: "Instalações"},
+    1: {1: "Problemas tecnicos", 2: "Duvidas sobre uso do sistema", 3: "Solicitacao de acesso remoto"},
+    2: {1: "Falar com consultor comercial", 2: "Agendar demonstracao", 3: "Informacoes sobre produtos"},
+    3: {1: "Boleto", 2: "Nota Fiscal", 3: "Sistema bloqueado", 4: "Mensagem de cobranca", 5: "Nao consta"},
+    4: {1: "Reclamacao", 2: "Sugestao", 3: "Elogio"},
+    5: {1: "Nova instalacao", 2: "Migracao de sistema", 3: "Instalacao em novo computador"},
 }
 
 DEFAULT_OCCURRENCE_MAP = {
     1: {
-        1: {1: "Hardware", 2: "Captura de imagem", 3: "Configuração", 4: "Arquivos", 5: "Licença", 6: "Não consta"},
-        2: {1: "Reinstalação", 2: "Atualização (v1.0.0)", 3: "Migração", 4: "Treinamento"},
+        1: {1: "Pedal Zscan", 2: "Captura ou Ajustes de Imagens", 3: "Criacao ou Ajustes de Laudos", 4: "Arquivos indisponiveis em geral", 5: "Vigencia ou Mensagens no Sistema", 6: "Nao consta"},
+        2: {1: "Duvidas sobre funcionalidades", 2: "Treinamento de uso", 3: "Nao consta"},
+        3: {1: "Acesso ao servidor", 2: "Acesso remoto", 3: "Nao consta"},
     },
-    2: {1: {1: "Software A", 2: "Software B", 3: "Software C", 4: "Software D"}},
-    5: {1: {1: "Coleta de dados"}},
+    2: {
+        1: {1: "Informacoes sobre planos", 2: "Demonstracao do sistema", 3: "Nao consta"},
+        2: {1: "Agendamento de demonstracao", 2: "Cancelamento de demonstracao", 3: "Nao consta"},
+        3: {1: "Informacoes sobre produtos", 2: "Informacoes sobre precos", 3: "Nao consta"},
+    },
+    3: {
+        1: {1: "Pagamento de boleto", 2: "Segunda via de boleto", 3: "Boleto nao encontrado", 4: "Nao consta"},
+        2: {1: "Emissao de nota fiscal", 2: "Cancelamento de nota fiscal", 3: "Dados incorretos na nota", 4: "Nao consta"},
+        3: {1: "Desbloqueio de sistema", 2: "Problema de licenca", 3: "Nao consta"},
+        4: {1: "Mensagem de cobranca indevida", 2: "Duvidas sobre cobranca", 3: "Nao consta"},
+        5: {1: "Servico nao encontrado", 2: "Dados desatualizados", 3: "Nao consta"},
+    },
+    4: {
+        1: {1: "Reclamacao sobre atendimento", 2: "Reclamacao sobre produto", 3: "Reclamacao sobre prazo", 4: "Nao consta"},
+        2: {1: "Sugestao de melhoria", 2: "Sugestao de novo recurso", 3: "Nao consta"},
+        3: {1: "Elogio sobre atendimento", 2: "Elogio sobre produto", 3: "Nao consta"},
+    },
+    5: {
+        1: {1: "Instalacao Zscan", 2: "Instalacao Yoovet", 3: "Instalacao em servidor", 4: "Instalacao em estacao", 5: "Nao consta"},
+        2: {1: "Migracao de versao", 2: "Migracao de computador", 3: "Migracao de dados", 4: "Nao consta"},
+        3: {1: "Instalacao em notebook novo", 2: "Instalacao em desktop novo", 3: "Transferencia de licenca", 4: "Nao consta"},
+    },
 }
 
 DEFAULT_LANG_MAP = {1: "Português", 2: "English", 3: "Español"}
 
+DEFAULT_CHANNEL_MAP = {
+    "3fa4639084614f7e9fbe121dea5a28e5": "WhatsApp",
+    "79a46c93-19a2-4eed-8050-beea59b23528": "Templates/Sites",
+}
+
 DEFAULT_KPI_CONFIG = {
-    "Suporte Técnico": {
+    "Suporte Tecnico": {
         "t1": [
             {
                 "name": "Elogios de atendimento / Feedback",
-                "description": "Notas 4 e 5 são consideradas Feedback positivo.",
+                "description": "Notas 4 e 5 = Feedback positivo.",
                 "metric": "% em cima do total de avaliados com nota",
                 "meta": ">40%", "peso": 30, "tipo": "escalonado_percentual",
                 "niveis": [{"min": 40, "pts": 30, "extra_per_unit": 0.75}, {"min": 35, "pts": 15}, {"min": 30, "pts": 10}],
-                "cap": 60,
+                "cap": 50,
             },
             {
                 "name": "NPS (Net Promoter Score)",
-                "description": "Pontuação do NPS individual do agente. Cálculo oficial: ((Promotores - Detratores) / Total) × 100",
+                "description": "NPS individual oficial. Cálculo: ((Promotores - Detratores) / Total) × 100",
                 "metric": "NPS individual do agente",
-                "meta": ">=70/63/50", "peso": 30, "tipo": "escalonado_nps",
-                "niveis": [{"min": 70, "pts": 30}, {"min": 63, "pts": 15}, {"min": 50, "pts": 5}],
+                "meta": ">=90/70/63/50", "peso": 30, "tipo": "escalonado_nps",
+                "niveis": [{"min": 90, "pts": 50}, {"min": 70, "pts": 30}, {"min": 63, "pts": 15}, {"min": 50, "pts": 5}],
             },
             {
                 "name": "Feedback Negativo (Penalidade)",
-                "description": "Notas 1 e 2 são consideradas Feedback negativos.",
-                "metric": "% em cima do total de avaliados com nota",
-                "meta": "≤10%", "peso": -5, "tipo": "penalidade_taxa",
-                "threshold": 10, "cap": None, "extra_peso": -1,
+                "description": "Notas 1 e 2 = Feedback negativo. 5,5% = -5 pts. A cada 1% adicional = -5 pts.",
+                "metric": "% de feedbacks negativos (notas 1 e 2) sobre total avaliados",
+                "meta": "<=5.5%", "peso": -5, "tipo": "penalidade_percentual",
+                "penalidade": {"base_threshold": 5.5, "base_pts": -5, "extra_per_unit": -5, "min_limit": None},
             },
-            {"name": "Atendimentos | Ligações Finalizados", "description": "Quantidade total de chats encerrados no mês.", "metric": "Individual de chats encerrados no mês", "meta": 150, "peso": 10, "tipo": "proporcional"},
-            {"name": "Instalações e Migrações", "description": "Apenas tickets finalizados (inserção manual).", "metric": "Tickets finalizados", "meta": 10, "peso": 30, "tipo": "proporcional"},
-            {"name": "Assiduidade (sem faltas)", "description": "Dias de falta ou atrasos não justificados.", "metric": "Dias de falta ou atraso", "meta": 0, "peso": 35, "tipo": "sim_nao_assiduidade"},
-            {"name": "Indicação Comercial", "description": "Leads ou oportunidades geradas pelo suporte para o comercial.", "metric": "Indicações realizadas", "meta": 10, "peso": 50, "tipo": "proporcional"},
-            {"name": "Indicação Comercial - Vendida", "description": "Leads gerados pelo suporte que resultaram em vendas.", "metric": "Vendas efetivadas", "meta": 10, "peso": 100, "tipo": "proporcional"},
-            {"name": "Updates, Treinamentos e Tarefas (N1 a N3)", "description": "Tarefas no geral do suporte.", "metric": "Tarefas realizadas", "meta": 50, "peso": 50, "tipo": "proporcional", "is_automatic_sum": True},
+            {"name": "Atendimentos | Ligacoes Finalizados", "description": "Volume bruto: Meta de 150 chats. Peso 10 pts.", "metric": "Quantidade total de chats encerrados no mes", "meta": 150, "peso": 10, "tipo": "proporcional", "pontos_por_unidade": 0.0667},
+            {"name": "Instalacoes e Migracoes", "description": "Tickets finalizados. Meta de 10. Peso 30 pts. 3 pts por ticket.", "metric": "Tickets de instalacao/migracao finalizados no mes", "meta": 10, "peso": 30, "tipo": "proporcional", "pontos_por_unidade": 3},
+            {"name": "Assiduidade (sem faltas)", "description": "Metrica binaria: 0 faltas/atrasos no mes garante 35 pts.", "metric": "Faltas e atrasos no mes", "meta": 0, "peso": 35, "tipo": "binaria", "regra": "0_faltas_ganha_pontos"},
+            {"name": "Indicacao Comercial", "description": "Proporcional: Meta de 10 indicacoes. Peso 50 pts. 5 pts por indicacao.", "metric": "Indicacoes comerciais realizadas no mes", "meta": 10, "peso": 50, "tipo": "proporcional", "pontos_por_unidade": 5},
+            {"name": "Indicacao Comercial - Vendida", "description": "Proporcional: Meta de 10 vendas. Peso 100 pts. 10 pts por venda.", "metric": "Vendas realizadas por indicacao no mes", "meta": 10, "peso": 100, "tipo": "proporcional", "pontos_por_unidade": 10},
+            {"name": "Updates, Treinamentos e Tarefas (N1 a N3)", "description": "Tarefas no geral do suporte. Meta 50 tarefas. Peso 50 pts.", "metric": "Tarefas realizadas", "meta": 50, "peso": 50, "tipo": "proporcional", "is_automatic_sum": True},
         ],
         "t2": [
-             {"name": "Updates",      "meta": 1, "peso": 1,   "tipo": "proporcional"},
-             {"name": "Treinamentos", "meta": 1, "peso": 1,   "tipo": "proporcional"},
-             {"name": "Tarefa N1",    "meta": 1, "peso": 2,   "tipo": "proporcional"},
-             {"name": "Tarefa N2",    "meta": 1, "peso": 3,   "tipo": "proporcional"},
-             {"name": "Tarefa N3",    "meta": 1, "peso": 5,   "tipo": "proporcional"},
-             {"name": "Avaliação Média", "meta": "-", "peso": "-", "tipo": "-"},
-             {"name": "Mensagens Totais", "meta": "-", "peso": "-", "tipo": "-"},
+             {"name": "Updates",      "meta": 50, "peso": 1,   "tipo": "proporcional"},
+             {"name": "Treinamentos", "meta": 50, "peso": 1,   "tipo": "proporcional"},
+             {"name": "Tarefa N1",    "meta": 50, "peso": 2,   "tipo": "proporcional"},
+             {"name": "Tarefa N2",    "meta": 50, "peso": 3,   "tipo": "proporcional"},
+             {"name": "Tarefa N3",    "meta": 50, "peso": 5,   "tipo": "proporcional"},
         ],
         "penalidades_setoriais": [
-            {"name": "Ligações Perdidas (Setor)", "description": "Não é individual e sim para o setor.", "metric": "Ligações perdidas pelo grupo no mês", "meta": 0, "peso": -2, "tipo": "penalidade"},
+            {"name": "Ligacoes Perdidas (Setor)", "description": "Penalidade setorial: -2 pts por ligacao perdida. Nao e individual.", "metric": "Ligacoes perdidas pelo grupo no mes", "meta": 0, "peso": -2, "tipo": "penalidade"},
         ],
     },
 }
@@ -233,6 +244,7 @@ DEPT_MAP = DEFAULT_DEPT_MAP
 REASON_MAP = DEFAULT_REASON_MAP
 OCCURRENCE_MAP = DEFAULT_OCCURRENCE_MAP
 LANG_MAP = DEFAULT_LANG_MAP
+CHANNEL_MAP = DEFAULT_CHANNEL_MAP
 AGENTS = {}
 KPI_CONFIG = DEFAULT_KPI_CONFIG
 NPS_CONFIG = DEFAULT_NPS_CONFIG
@@ -271,6 +283,12 @@ def _to_int(val) -> int | None:
 def resolve_dept(dept_id) -> str:
     d = _to_int(dept_id)
     return DEPT_MAP.get(d, str(dept_id or "N/A")) if d is not None else str(dept_id or "N/A")
+
+def resolve_channel(channel_id) -> str:
+    """Resolve UUID do canal para nome legível."""
+    if not channel_id:
+        return "Desconhecido"
+    return CHANNEL_MAP.get(str(channel_id), "Outro Canal")
 
 def resolve_reason(dept_id, reason_id) -> str:
     d = _to_int(dept_id)

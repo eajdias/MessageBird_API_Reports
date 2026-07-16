@@ -89,7 +89,8 @@ class ReportAggregator:
             "pct_compliments": round(compliments / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
             "pct_negatives": round(negatives / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
             "unique_clients": unique_clients,
-            "returners": returners
+            "returners": returners,
+            "rating_coverage": round(total_ratings / len(processed_data) * 100, 2) if len(processed_data) > 0 else 0
         }
 
     def aggregate_dashboard(self, data: List[ProcessedReportData], title: str, start_date: str, end_date: str, prev_month_metrics: Dict[str, Any] = None) -> DashboardDTO:
@@ -309,6 +310,7 @@ class ReportAggregator:
                 f"{round(stats['total_chats']/total_chats*100, 2)}%" if total_chats else "0%",
                 stats["total_msgs"], stats["avg_art"], stats["sla_compliance"],
                 stats["avg_duration"], stats["avg_nps"], stats["real_nps"],
-                stats["avg_rating"], stats["unique_clients"], stats["returners"]
+                stats["avg_rating"], stats["unique_clients"], stats["returners"],
+                f"{stats['rating_coverage']}%"
             ])
         return rows

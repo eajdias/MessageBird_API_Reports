@@ -19,6 +19,12 @@ Thank you for your interest in contributing to this project! We welcome contribu
 *   Keep the domain layer pure (no external dependencies).
 *   Use `uv` for dependency management.
 *   Ensure all tests pass before submitting a pull request.
+*   Use the AI skill system (`.opencode/skills/`) for specialized tasks:
+    *   `arch-guard`: revisões arquiteturais e criação/refatoração de código.
+    *   `report-architect`: evoluir Dashboards/Excel e exportadores.
+    *   `sync-maintainer`: mexer na pipeline de sincronização MessageBird -> SQLite.
+    *   `add-business-metric`: adicionar ou alterar métricas de negócio.
+    *   `business-config`: adaptar a configuração para uma nova empresa.
 
 ## License
 

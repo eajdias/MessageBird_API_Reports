@@ -82,6 +82,11 @@ DEPT_ROUTING:
   "Financeiro": "Financeiro"
   "Nova Instalacao | Migracao": "CS | Instalacao | Migracao"
 
+# Mapeamento de canais: UUID do canal -> nome exibido
+CHANNEL_MAP:
+  "3fa4639084614f7e9fbe121dea5a28e5": "WhatsApp"
+  "79a46c93-19a2-4eed-8050-beea59b23528": "Templates/Sites"
+
 # Agentes: bird_id (string) -> { name, group }
 AGENTS:
   bird_id_do_agente_1: { name: "Nome do Agente 1", group: "Suporte Tecnico" }
@@ -114,6 +119,19 @@ Mapeia agentes MessageBird para nomes e grupos:
 - **group**: grupo organizacional (define a pasta de saída)
 
 Agentes novos são criados automaticamente no banco durante a sincronização; basta adicionar o `bird_id` e o `group` para que apareçam no relatório certo.
+
+#### `CHANNEL_MAP` (opcional)
+Mapeia IDs de canais da API para nomes legíveis. Usado para identificar se a conversa veio de WhatsApp, Telegram, etc.
+
+- **Chave**: UUID do canal na API MessageBird
+- **Valor**: nome exibido nos relatórios
+
+Exemplo:
+```yaml
+CHANNEL_MAP:
+  "3fa4639084614f7e9fbe121dea5a28e5": "WhatsApp"
+  "79a46c93-19a2-4eed-8050-beea59b23528": "Templates/Sites"
+```
 
 ---
 
@@ -148,6 +166,22 @@ KPI_CONFIG:
           - { min: 70, pts: 30 }
           - { min: 63, pts: 15 }
           - { min: 50, pts: 5 }
+      - name: "Feedback Negativo (Penalidade)"
+        description: "Notas 1 e 2 = Feedback negativo. 5,5% = -5 pts. A cada 1% adicional = -5 pts."
+        meta: "<=5.5%"
+        peso: -5
+        tipo: "penalidade_percentual"
+        penalidade:
+          base_threshold: 5.5
+          base_pts: -5
+          extra_per_unit: -5
+          min_limit: null
+      - name: "Assiduidade (sem faltas)"
+        description: "Métrica binária: 0 faltas/atrasos no mês garante 35 pts."
+        meta: 0
+        peso: 35
+        tipo: "binaria"
+        regra: "0_faltas_ganha_pontos"
     t2:
       - { name: "Updates",      meta: 1, peso: 1, tipo: "proporcional" }
       - { name: "Treinamentos", meta: 1, peso: 1, tipo: "proporcional" }
@@ -168,6 +202,20 @@ METRIC_THRESHOLDS:
   max_art_minutes: 480
   max_duration_minutes: 630
 ```
+
+### Tipos de KPI Disponíveis
+
+| Tipo | Descrição | Fórmula Excel |
+|:-----|:----------|:--------------|
+| `proporcional` | Proporcional à meta | `(valor/meta)*peso` |
+| `escalonado_percentual` | Escalonado por faixas percentuais | Níveis com `min`, `pts`, `extra_per_unit` |
+| `escalonado_nps` | Escalonado por faixas NPS | Níveis com `min`, `pts` |
+| `penalidade` | Penalidade fixa | `valor*peso` |
+| `penalidade_taxa` | Penalidade por taxa | Base + extra por unidade |
+| `penalidade_percentual` | Penalidade percentual | Base no threshold + extra por % |
+| `binaria` | Binária (0 ou peso) | `IF(valor=meta, peso, 0)` |
+| `sim_nao_nps` | SIM ou Não para NPS | `IF(SIM, peso, 0)` |
+| `sim_nao_assiduidade` | SIM ou Não para assiduidade | `IF(SIM ou 0 faltas, peso, 0)` |
 
 > **Dica:** a skill `business-config` (`.opencode/skills/business-config`) documenta passo a passo como adaptar esses arquivos para uma nova empresa.
 

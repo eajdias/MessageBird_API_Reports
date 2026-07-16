@@ -95,7 +95,8 @@ class SyncManager:
         logger.info(f"Seeding {len(known_agents)} known agents...")
         agents_data = []
         for bird_id, name in known_agents.items():
-            agents_data.append((name, bird_id))
+            # Proteger contra espaços em branco
+            agents_data.append((name.strip() if name else name, bird_id))
 
         await conn.execute_many(
             """
@@ -156,12 +157,14 @@ class SyncManager:
             return self._contact_cache[bird_id]
 
         # Create new (or ignore if already exists)
+        # Tratar None e strings inválidas
+        safe_name = name if name and str(name).strip() else None
         await conn.execute_query(
             """
             INSERT OR IGNORE INTO contacts (cnts_bird, cnts_name, cnts_phone)
             VALUES (?, ?, ?)
             """,
-            (bird_id, name, phone),
+            (bird_id, safe_name, phone),
         )
 
         # Fetch back ID (SQLite autoincrement)
@@ -178,6 +181,9 @@ class SyncManager:
         """Get internal ID for agent, creating if needed (using cache)."""
         if bird_id in self._agent_cache:
             return self._agent_cache[bird_id]
+
+        # Proteger contra espaços em branco
+        name = name.strip() if name else name
 
         await conn.execute_query(
             """
@@ -232,17 +238,20 @@ class SyncManager:
             contacts_data = []
             for c in items:
                 phone = c.get("phone") or str(c.get("msisdn", ""))
+                # Proteger contra "None" string
+                if phone in ("None", "null", ""):
+                    phone = None
+                contact_name = c.get("displayName") or None
+                # Tratar "None" string e nomes vazios
+                if contact_name and str(contact_name).strip().lower() in ("none", "null", ""):
+                    contact_name = None
                 contacts_data.append(
                     (
-                        c.get("displayName"),
+                        contact_name,
                         phone,
                         c.get("id"),
                         c.get("createdAt"),
                         c.get("updatedAt"),
-                        c.get("custom1"),
-                        c.get("custom2"),
-                        c.get("custom3"),
-                        c.get("custom4"),
                     )
                 )
 
@@ -251,18 +260,13 @@ class SyncManager:
                     await conn.execute_many(
                         """
                         INSERT INTO contacts (
-                            cnts_name, cnts_phone, cnts_bird, cnts_created, cnts_updated,
-                            cnts_custom1, cnts_custom2, cnts_custom3, cnts_custom4
+                            cnts_name, cnts_phone, cnts_bird, cnts_created, cnts_updated
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?)
                         ON CONFLICT(cnts_bird) DO UPDATE SET
                             cnts_name = excluded.cnts_name,
                             cnts_phone = excluded.cnts_phone,
-                            cnts_updated = excluded.cnts_updated,
-                            cnts_custom1 = excluded.cnts_custom1,
-                            cnts_custom2 = excluded.cnts_custom2,
-                            cnts_custom3 = excluded.cnts_custom3,
-                            cnts_custom4 = excluded.cnts_custom4
+                            cnts_updated = excluded.cnts_updated
                         """,
                         contacts_data,
                     )
@@ -404,8 +408,12 @@ class SyncManager:
                     c_id = c["contactId"]
                     if c_id not in self._contact_cache:
                         contact_data = c.get("contact", {})
+                        contact_name = contact_data.get("displayName") or None
+                        # Tratar "None" string e nomes vazios
+                        if contact_name and str(contact_name).strip().lower() in ("none", "null", ""):
+                            contact_name = None
                         contacts_to_resolve[c_id] = (
-                            contact_data.get("displayName"),
+                            contact_name,
                             str(contact_data.get("msisdn", "")),
                         )
 

@@ -12,11 +12,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     cnts_phone TEXT,
     cnts_bird TEXT UNIQUE NOT NULL,
     cnts_created DATETIME DEFAULT CURRENT_TIMESTAMP,
-    cnts_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-    cnts_custom1 TEXT,
-    cnts_custom2 TEXT,
-    cnts_custom3 TEXT,
-    cnts_custom4 TEXT
+    cnts_updated DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_contacts_bird ON contacts(cnts_bird);
 CREATE INDEX IF NOT EXISTS idx_contacts_phone ON contacts(cnts_phone);
@@ -47,8 +43,6 @@ CREATE TABLE IF NOT EXISTS conversations (
     cnvs_dept INTEGER,
     cnvs_rating_agent INTEGER,
     cnvs_rating_nps INTEGER,
-    cnvs_sentiment TEXT,
-    cnvs_category TEXT,
     cnvs_reopened_count INTEGER DEFAULT 0,
     cnvs_contact_reason INTEGER,
     cnvs_occurrence INTEGER,

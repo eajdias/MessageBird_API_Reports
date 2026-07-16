@@ -13,6 +13,8 @@ _TIPO_LABELS = {
     "escalonado_nps":        "Escalonado NPS",
     "escalonado_percentual": "Escalonado %",
     "penalidade_taxa":       "Penalidade Taxa",
+    "penalidade_percentual": "Penalidade %",
+    "binaria":               "Binária",
 }
 
 def _is_empty(val) -> bool:
@@ -74,6 +76,21 @@ def _kpi_excel_formula(real_cell: str, kpi_def: dict) -> str:
             if cap is not None:
                 inner = f"MAX({cap},{inner})"
             return f'=IF({guard},"",{inner})'
+
+        elif tipo == "penalidade_percentual":
+            penal = kpi_def.get("penalidade", {})
+            base_thresh = penal.get("base_threshold", 5.5)
+            base_pts = penal.get("base_pts", -5)
+            extra = penal.get("extra_per_unit", -5)
+            min_limit = penal.get("min_limit")
+            value_pct = f"({real_cell}*100)"
+            inner = f"IF({value_pct}<={base_thresh},{base_pts},{base_pts}+(({value_pct}-{base_thresh})*{extra}))"
+            if min_limit is not None:
+                inner = f"MAX({min_limit},{inner})"
+            return f'=IF({guard},"",{inner})'
+
+        elif tipo == "binaria":
+            return f'=IF({guard},"",IF({real_cell}={meta},{peso},0))'
 
     except (ValueError, TypeError):
         return "-"

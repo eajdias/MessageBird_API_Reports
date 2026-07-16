@@ -52,7 +52,8 @@ application/
 │   └── exporter.py       # ABC para exportadores
 ├── use_cases/
 │   ├── sync_database.py  # Sincronizacao com API
-│   └── generate_report.py # Geracao de relatorios
+│   ├── generate_report.py # Geracao de relatorios
+│   └── data_quality_report.py # Relatorio de qualidade dos dados
 └── services/
     ├── report_aggregator.py  # Agregacao de metricas
     ├── sub_aggregators.py    # Agregadores temporais, por topico
@@ -78,20 +79,44 @@ infrastructure/
 │   ├── sqlite_repository.py # Implementacao do repositorio
 │   └── queries.py        # Consultas SQL
 ├── exporters/
+│   ├── _bsc_writer.py    # Formulas Excel para BSC/KPI
 │   ├── excel_exporter.py # Exportacao Excel (xlsxwriter)
 │   ├── pdf_exporter.py   # Exportacao PDF (fpdf2)
-│   └── markdown_exporter.py # Exportacao README.md
+│   ├── markdown_exporter.py # Exportacao README.md
+│   ├── metrics_cache.py  # Cache de metricas entre execucoes
+│   └── mappers/          # Mappers para formatos de saida
 └── config_loader.py      # Leitura de business_config.yaml e business_bsc.yaml
 ```
 
 **Regra:** Onde frameworks e bibliotecas externas vivem. Nenhuma logica de negocio deve vazar para ca.
 
+### 2.5 Schema do Banco de Dados
+
+O banco SQLite (`m_bird.db`) contem as seguintes tabelas:
+
+| Tabela | Descricao |
+|:-------|:----------|
+| `contacts` | Contatos (clientes) |
+| `agents` | Agentes de atendimento |
+| `conversations` | Conversas/chats |
+| `messages` | Mensagens das conversas |
+| `sync` | Historico de sincronizacoes |
+| `sync_errors` | Erros durante sincronizacao |
+
+Para detalhes completos do schema, veja `docs/banco_de_dados.md`.
+
+### 2.6 Mapeamento de Canais
+
+O sistema mapeia IDs de canais da API para nomes legíveis via `CHANNEL_MAP` no `business_config.yaml`. A funcao `resolve_channel()` em `domain/constants.py` retorna o nome do canal para exibicao nos relatorios.
+
 ### 2.4 Camada de Apresentacao (`presentation/`)
 
 ```
 presentation/
-└── terminal.py           # Interface CLI (rich)
+└── terminal.py           # Interface de exibicao (rich)
 ```
+
+**Nota:** O entry point CLI e `main.py` na raiz do projeto. `terminal.py` e apenas helper de exibicao.
 
 ---
 

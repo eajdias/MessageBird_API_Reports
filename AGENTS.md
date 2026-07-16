@@ -5,7 +5,7 @@ Este projeto segue rigorosamente a **Clean Architecture**. O opencode deve usar 
 ## 🏗️ Estrutura de Mandatos (Navegação)
 - `domain/`: Regras de pureza, Entidades e Lógica Canônica.
 - `application/`: Orquestração, Use Cases, Interfaces e DTOs.
-- `infrastructure/`: Detalhes técnicos, Repositórios e Exporters (Excel/PDF).
+- `infrastructure/`: Detalhes técnicos, Repositórios e Exporters (Excel/PDF/Markdown).
 - `presentation/`: Ferramentas e pontos de entrada CLI.
 - Arquivos de configuração na raiz: `.env` (segredos), `business_config.yaml` (mapas de negócio) e `business_bsc.yaml` (NPS/BSC/thresholds).
 - `tests/`: Padrões de teste e isolamento de banco.
