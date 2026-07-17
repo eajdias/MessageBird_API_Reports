@@ -74,6 +74,17 @@ ALL_MSGS_RANGE_QUERY = """
     ORDER BY m.msgs_created ASC
 """
 
+MESSAGES_FOR_CONVERSATIONS_QUERY = """
+    SELECT
+        m.msgs_cnvs,
+        m.msgs_created,
+        m.msgs_direction,
+        m.msgs_agnt
+    FROM messages m
+    WHERE m.msgs_cnvs IN ({placeholders})
+    ORDER BY m.msgs_cnvs, m.msgs_created ASC
+"""
+
 MESSAGES_BY_CONVERSATION_QUERY = """
     SELECT
         m.msgs_created,

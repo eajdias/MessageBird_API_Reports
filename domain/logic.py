@@ -75,10 +75,12 @@ def calculate_business_duration(start_dt: datetime, end_dt: datetime) -> float:
     return delta
 
 def _get_val(obj, keys, default=None):
-    if hasattr(obj, "get"):
+    if hasattr(obj, "keys"):
         for key in keys:
-            if key in obj:
+            try:
                 return obj[key]
+            except (KeyError, IndexError):
+                pass
     else:
         for key in keys:
             val = getattr(obj, key, None)
@@ -106,42 +108,53 @@ def calculate_ticket_duration(created_at: str, updated_at: str) -> float:
 
 def get_effective_start_time(messages: List[Any], default_start: str) -> str:
     """
-    Finds the last customer message before the first agent response.
-    Replaces the complex SQL 'queue_time' subquery to ensure Domain verticality.
+    Finds the start of the current activity episode:
+    - Detects reopen gaps (inactivity >= REOPEN_GAP_HOURS) and focuses on the latest episode.
+    - Within that episode, finds the last customer message before the first agent response.
     """
+    if not messages:
+        return default_start
+
+    from domain.constants import REOPEN_GAP_HOURS
+    gap_threshold = REOPEN_GAP_HOURS * 3600
+    last_gap_idx = -1
+
+    for i in range(1, len(messages)):
+        prev = _get_val(messages[i - 1], ('msgs_created', 'created'))
+        curr = _get_val(messages[i], ('msgs_created', 'created'))
+        prev_dt = parse_datetime(prev)
+        curr_dt = parse_datetime(curr)
+        if prev_dt and curr_dt and (curr_dt - prev_dt).total_seconds() >= gap_threshold:
+            last_gap_idx = i
+
+    if last_gap_idx >= 0:
+        active_msgs = messages[last_gap_idx:]
+    else:
+        active_msgs = messages
+
     first_agent_msg_time = None
-    for m in messages:
-        # Support both dict (from raw rows) and RawMessageData objects
-        if hasattr(m, "get"):
-            direction = m.get('msgs_direction', m.get('direction'))
-            agent_id = m.get('msgs_agnt', m.get('agent_id'))
-            created = m.get('msgs_created', m.get('created'))
-        else:
-            direction = getattr(m, 'direction', None)
-            agent_id = getattr(m, 'agent_id', None)
-            created = getattr(m, 'created', None)
-        
+    for m in active_msgs:
+        direction = _get_val(m, ('msgs_direction', 'direction'))
+        agent_id = _get_val(m, ('msgs_agnt', 'agent_id'))
+        created = _get_val(m, ('msgs_created', 'created'))
+
         if direction == "sent" and agent_id is not None:
             first_agent_msg_time = created
             break
-            
+
     if not first_agent_msg_time:
         return default_start
-        
+
     last_customer_msg_time = None
-    for m in messages:
-        if hasattr(m, "get"):
-            direction = m.get('msgs_direction', m.get('direction'))
-            created = m.get('msgs_created', m.get('created'))
-        else:
-            direction = getattr(m, 'direction', None)
-            created = getattr(m, 'created', None)
-        
+    for m in active_msgs:
+        direction = _get_val(m, ('msgs_direction', 'direction'))
+        created = _get_val(m, ('msgs_created', 'created'))
+
         if direction == "received" and created <= first_agent_msg_time:
             if not last_customer_msg_time or created > last_customer_msg_time:
                 last_customer_msg_time = created
         elif created > first_agent_msg_time:
             break
-            
+
     return last_customer_msg_time or default_start
 

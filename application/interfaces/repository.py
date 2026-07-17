@@ -62,3 +62,7 @@ class ReportRepository(ABC):
     @abstractmethod
     async def fetch_messages_by_conversation(self, conversation_id: int) -> List[Dict[str, Any]]:
         pass
+
+    @abstractmethod
+    async def fetch_messages_for_conversations(self, conversation_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
+        pass

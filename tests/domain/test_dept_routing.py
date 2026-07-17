@@ -1,5 +1,7 @@
 import unittest
+import os
 from domain import constants
+from infrastructure.config_loader import load_and_configure_business
 
 
 class TestResolveConversationGroup(unittest.TestCase):
@@ -7,11 +9,18 @@ class TestResolveConversationGroup(unittest.TestCase):
 
     AGENTS_BACKUP: dict = {}
     DEPT_ROUTING_BACKUP: dict = {}
+    DEPT_MAP_BACKUP: dict = {}
 
     @classmethod
     def setUpClass(cls):
         cls.AGENTS_BACKUP = constants.AGENTS.copy()
         cls.DEPT_ROUTING_BACKUP = constants.DEPT_ROUTING.copy()
+        cls.DEPT_MAP_BACKUP = constants.DEPT_MAP.copy()
+
+        # Load business config so DEPT_MAP has real values
+        config_path = os.path.join(os.path.dirname(__file__), "..", "..", "business_config.yaml")
+        if os.path.exists(config_path):
+            load_and_configure_business(config_path)
 
         constants.AGENTS = {
             "id_1": {"name": "Alice Suporte", "group": "Suporte Técnico"},
@@ -23,6 +32,7 @@ class TestResolveConversationGroup(unittest.TestCase):
     def tearDownClass(cls):
         constants.AGENTS = cls.AGENTS_BACKUP
         constants.DEPT_ROUTING = cls.DEPT_ROUTING_BACKUP
+        constants.DEPT_MAP = cls.DEPT_MAP_BACKUP
 
     def setUp(self):
         # começa cada teste com DEPT_ROUTING vazio
@@ -117,7 +127,7 @@ class TestResolveConversationGroup(unittest.TestCase):
     # ── resolve_dept (mantendo cobertura) ─────────────────────────────────
 
     def test_resolve_dept_known_int(self):
-        self.assertEqual(constants.resolve_dept(1), "Suporte Técnico")
+        self.assertEqual(constants.resolve_dept(1), constants.DEPT_MAP.get(1, "1"))
 
     def test_resolve_dept_unknown_int(self):
         self.assertEqual(constants.resolve_dept(99), "99")

@@ -765,6 +765,9 @@ class SyncManager:
                     )
                 )
 
+            # Detect reopen: archived conversation receiving new messages
+            reopen_increment = 0
+
             if batch_params:
                 async with conn.transaction():
                     await conn.execute_many(

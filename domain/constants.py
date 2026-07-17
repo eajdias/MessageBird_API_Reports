@@ -7,6 +7,7 @@ SLA_FRT_THRESHOLD_SECONDS = 3600
 SLA_FRT_THRESHOLD_MINUTES = 60
 MAX_ART_MINUTES = 480       # 8 horas — máximo aceitável para Average Response Time
 MAX_DURATION_MINUTES = 630  # 10h30 — máximo aceitável para duração total de chat
+REOPEN_GAP_HOURS = 24       # Gap mínimo de inatividade para detectar reabertura por mensagens
 
 # ── Agent report headers ──────────────────────────────────────────────────────
 

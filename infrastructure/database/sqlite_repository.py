@@ -228,3 +228,17 @@ class SqliteReportRepository(ReportRepository):
 
     async def fetch_messages_by_conversation(self, conversation_id: int) -> List[Dict[str, Any]]:
         return await self.db.fetch_all(queries.MESSAGES_BY_CONVERSATION_QUERY, (conversation_id,))
+
+    async def fetch_messages_for_conversations(self, conversation_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
+        if not conversation_ids:
+            return {}
+        placeholders = ",".join("?" * len(conversation_ids))
+        sql = queries.MESSAGES_FOR_CONVERSATIONS_QUERY.format(placeholders=placeholders)
+        rows = await self.db.fetch_all(sql, tuple(conversation_ids))
+        result: Dict[int, List[Dict[str, Any]]] = {}
+        for r in rows:
+            cid = r["msgs_cnvs"]
+            if cid not in result:
+                result[cid] = []
+            result[cid].append(r)
+        return result
