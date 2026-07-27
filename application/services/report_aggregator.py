@@ -4,25 +4,35 @@ from domain.entities.report_data import RawConversationData, ProcessedReportData
 from domain.services.metrics_calculator import MetricsCalculator
 from domain import constants
 from application.interfaces.exporter import DashboardDTO
-from application.services.sub_aggregators import TemporalAggregator, TopicAggregator, RatingAggregator
+from application.services.sub_aggregators import (
+    TemporalAggregator,
+    TopicAggregator,
+    RatingAggregator,
+)
+
 
 class ReportAggregator:
-    def __init__(self, strategies: List[Any] = None,
-                 temporal_aggregator: TemporalAggregator = None,
-                 topic_aggregator: TopicAggregator = None,
-                 rating_aggregator: RatingAggregator = None):
+    def __init__(
+        self,
+        strategies: List[Any] = None,
+        temporal_aggregator: TemporalAggregator = None,
+        topic_aggregator: TopicAggregator = None,
+        rating_aggregator: RatingAggregator = None,
+    ):
         self._strategies = strategies or []
         self._temporal = temporal_aggregator or TemporalAggregator()
         self._topic = topic_aggregator or TopicAggregator()
         self._rating = rating_aggregator or RatingAggregator()
 
-    def process_conversation(self, raw_data: RawConversationData) -> ProcessedReportData:
+    def process_conversation(
+        self, raw_data: RawConversationData
+    ) -> ProcessedReportData:
         """Processes a single conversation to extract granular metrics."""
         results = {}
         for strategy in self._strategies:
             # We use the class name as key for simplicity
             results[type(strategy).__name__] = strategy.calculate(raw_data)
-        
+
         # Calculate derived fields
         rating = raw_data.rating
         is_compliment = rating in (4, 5)
@@ -30,7 +40,7 @@ class ReportAggregator:
         nps = raw_data.nps
         if nps is not None and not (1 <= nps <= 10):
             nps = None
-        
+
         return ProcessedReportData(
             conversation_id=raw_data.id,
             agent=raw_data.metadata.get("agent_name", "Unknown"),
@@ -49,51 +59,80 @@ class ReportAggregator:
             phone=raw_data.phone,
             start_time=raw_data.start_time,
             end_time=raw_data.end_time,
-            raw_created=raw_data.raw_created
+            raw_created=raw_data.raw_created,
         )
 
-    def process_all(self, raw_data_list: List[RawConversationData]) -> List[ProcessedReportData]:
+    def process_all(
+        self, raw_data_list: List[RawConversationData]
+    ) -> List[ProcessedReportData]:
         """Processes a list of raw conversations into processed data."""
         return [self.process_conversation(r) for r in raw_data_list]
 
-    def aggregate_statistics(self, processed_data: List[ProcessedReportData]) -> Dict[str, Any]:
+    def aggregate_statistics(
+        self, processed_data: List[ProcessedReportData]
+    ) -> Dict[str, Any]:
         """
         Orchestrates the aggregation of statistics for a set of conversations.
         Delegates all math to MetricsCalculator.
         """
         ratings = [p.rating for p in processed_data if p.rating is not None]
         nps_scores = [p.nps for p in processed_data if p.nps is not None]
-        arts = [p.art_min for p in processed_data if isinstance(p.art_min, (int, float)) and 0 < p.art_min <= constants.MAX_ART_MINUTES]
-        durations = [p.duration_min for p in processed_data if isinstance(p.duration_min, (int, float)) and 0 < p.duration_min <= constants.MAX_DURATION_MINUTES]
-        
+        arts = [
+            p.art_min
+            for p in processed_data
+            if isinstance(p.art_min, (int, float))
+            and 0 < p.art_min <= constants.MAX_ART_MINUTES
+        ]
+        durations = [
+            p.duration_min
+            for p in processed_data
+            if isinstance(p.duration_min, (int, float))
+            and 0 < p.duration_min <= constants.MAX_DURATION_MINUTES
+        ]
+
         compliments = sum(1 for p in processed_data if p.is_compliment)
         negatives = sum(1 for p in processed_data if p.is_negative)
         total_ratings = len(ratings)
-        
+
         # Count unique contacts and returners (contacts with >1 chat)
         contacts = Counter(p.contact_id for p in processed_data if p.contact_id)
         unique_clients = len(contacts)
         returners = sum(1 for count in contacts.values() if count > 1)
-        
+
         return {
             "avg_rating": MetricsCalculator.calculate_rating_average(ratings),
             "avg_nps": MetricsCalculator.calculate_average(nps_scores),
             "real_nps": MetricsCalculator.calculate_nps(nps_scores),
             "avg_art": MetricsCalculator.calculate_average(arts),
             "avg_duration": MetricsCalculator.calculate_average(durations),
-            "sla_compliance": MetricsCalculator.calculate_sla_rate(arts, threshold=constants.SLA_FRT_THRESHOLD_MINUTES),
+            "sla_compliance": MetricsCalculator.calculate_sla_rate(
+                arts, threshold=constants.SLA_FRT_THRESHOLD_MINUTES
+            ),
             "total_chats": len(processed_data),
             "total_msgs": sum(p.msg_count for p in processed_data),
             "compliments": compliments,
             "negatives": negatives,
-            "pct_compliments": round(compliments / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
-            "pct_negatives": round(negatives / total_ratings * 100, 2) if total_ratings > 0 else "N/A",
+            "pct_compliments": round(compliments / total_ratings * 100, 2)
+            if total_ratings > 0
+            else "N/A",
+            "pct_negatives": round(negatives / total_ratings * 100, 2)
+            if total_ratings > 0
+            else "N/A",
             "unique_clients": unique_clients,
             "returners": returners,
-            "rating_coverage": round(total_ratings / len(processed_data) * 100, 2) if len(processed_data) > 0 else 0
+            "rating_coverage": round(total_ratings / len(processed_data) * 100, 2)
+            if len(processed_data) > 0
+            else 0,
         }
 
-    def aggregate_dashboard(self, data: List[ProcessedReportData], title: str, start_date: str, end_date: str, prev_month_metrics: Dict[str, Any] = None) -> DashboardDTO:
+    def aggregate_dashboard(
+        self,
+        data: List[ProcessedReportData],
+        title: str,
+        start_date: str,
+        end_date: str,
+        prev_month_metrics: Dict[str, Any] = None,
+    ) -> DashboardDTO:
         general = self.aggregate_statistics(data)
         dist_data = self._rating.aggregate_distributions(data)
         topic_reasons = self._topic.aggregate_reasons(data)
@@ -194,29 +233,36 @@ class ReportAggregator:
             prev_month_metrics=prev_month_metrics or {},
         )
 
-    def aggregate_monthly_breakdown(self, processed_data_by_month: Dict[str, List[ProcessedReportData]],
-                                     prev_metrics: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def aggregate_monthly_breakdown(
+        self,
+        processed_data_by_month: Dict[str, List[ProcessedReportData]],
+        prev_metrics: Dict[str, Any] = None,
+    ) -> List[Dict[str, Any]]:
         months = []
         for month_key in sorted(processed_data_by_month.keys()):
             data = processed_data_by_month[month_key]
             stats = self.aggregate_statistics(data)
-            months.append({
-                "month": month_key,
-                "total_chats": stats.get("total_chats", 0),
-                "total_msgs": stats.get("total_msgs", 0),
-                "avg_art": stats.get("avg_art"),
-                "avg_duration": stats.get("avg_duration"),
-                "real_nps": stats.get("real_nps"),
-                "sla_compliance": stats.get("sla_compliance"),
-                "avg_rating": stats.get("avg_rating"),
-                "compliments": stats.get("compliments", 0),
-                "negatives": stats.get("negatives", 0),
-                "unique_clients": stats.get("unique_clients", 0),
-                "returners": stats.get("returners", 0),
-            })
+            months.append(
+                {
+                    "month": month_key,
+                    "total_chats": stats.get("total_chats", 0),
+                    "total_msgs": stats.get("total_msgs", 0),
+                    "avg_art": stats.get("avg_art"),
+                    "avg_duration": stats.get("avg_duration"),
+                    "real_nps": stats.get("real_nps"),
+                    "sla_compliance": stats.get("sla_compliance"),
+                    "avg_rating": stats.get("avg_rating"),
+                    "compliments": stats.get("compliments", 0),
+                    "negatives": stats.get("negatives", 0),
+                    "unique_clients": stats.get("unique_clients", 0),
+                    "returners": stats.get("returners", 0),
+                }
+            )
         return months
 
-    def build_excel_rows(self, processed_data: List[ProcessedReportData], report_type: str = "agents") -> List[List[Any]]:
+    def build_excel_rows(
+        self, processed_data: List[ProcessedReportData], report_type: str = "agents"
+    ) -> List[List[Any]]:
         """
         Transforms processed entities into Excel-ready rows based on report type.
         Supports: 'agents', 'groups', 'departments'.
@@ -231,15 +277,27 @@ class ReportAggregator:
 
     def _build_agent_row(self, label: str, group: str, agent: str, stats: dict) -> list:
         return [
-            label, group, agent,
-            stats["total_chats"], "100%",
-            stats["compliments"], stats["pct_compliments"],
-            stats["negatives"], stats["pct_negatives"],
+            label,
+            group,
+            agent,
+            stats["total_chats"],
+            "100%",
+            stats["compliments"],
+            stats["pct_compliments"],
+            stats["negatives"],
+            stats["pct_negatives"],
             stats["total_msgs"],
-            round(stats["total_msgs"] / stats["total_chats"], 2) if stats["total_chats"] > 0 else 0,
-            stats["avg_rating"], stats["avg_nps"], stats["real_nps"],
-            stats["avg_art"], stats["sla_compliance"], stats["avg_duration"],
-            stats["unique_clients"], stats["returners"]
+            round(stats["total_msgs"] / stats["total_chats"], 2)
+            if stats["total_chats"] > 0
+            else 0,
+            stats["avg_rating"],
+            stats["avg_nps"],
+            stats["real_nps"],
+            stats["avg_art"],
+            stats["sla_compliance"],
+            stats["avg_duration"],
+            stats["unique_clients"],
+            stats["returners"],
         ]
 
     def _build_agents_rows(self, data: List[ProcessedReportData]) -> List[List[Any]]:
@@ -249,31 +307,35 @@ class ReportAggregator:
             if p.agent not in agent_map:
                 agent_map[p.agent] = []
             agent_map[p.agent].append(p)
-            
+
         rows = []
         for agent, p_list in agent_map.items():
             stats = self.aggregate_statistics(p_list)
-            
-            # Find main department for this agent
+
+            # Find main department for this agent (use routed group name)
             depts = Counter(p.dept_label for p in p_list)
             main_dept = depts.most_common(1)[0][0] if depts else "N/A"
-            
-            rows.append(self._build_agent_row(
-                main_dept, constants.resolve_conversation_group(agent, main_dept), agent, stats
-            ))
-            
+            main_group = constants.resolve_conversation_group(agent, main_dept)
+
+            rows.append(
+                self._build_agent_row(
+                    main_group,
+                    main_group,
+                    agent,
+                    stats,
+                )
+            )
+
         # Add Global Summary Row at the top
         global_stats = self.aggregate_statistics(data)
-        rows.sort(key=lambda x: x[9], reverse=True) # Sort by total messages
+        rows.sort(key=lambda x: x[9], reverse=True)  # Sort by total messages
 
         # TOTAIS must be sum of per-agent values (not global deduplication),
         # so that it matches the visible agents in the table.
         global_stats["unique_clients"] = sum(r[17] for r in rows)
         global_stats["returners"] = sum(r[18] for r in rows)
 
-        rows.insert(0, self._build_agent_row(
-            "N/A", "GLOBAL", "TOTAIS", global_stats
-        ))
+        rows.insert(0, self._build_agent_row("N/A", "GLOBAL", "TOTAIS", global_stats))
         return rows
 
     def _build_groups_rows(self, data: List[ProcessedReportData]) -> List[List[Any]]:
@@ -283,34 +345,58 @@ class ReportAggregator:
             if grp not in group_map:
                 group_map[grp] = []
             group_map[grp].append(p)
-            
+
         rows = []
         for grp, p_list in group_map.items():
             stats = self.aggregate_statistics(p_list)
-            rows.append([
-                grp, stats["total_chats"], stats["total_msgs"], stats["avg_art"],
-                stats["sla_compliance"], stats["avg_duration"], stats["avg_nps"],
-                stats["real_nps"], stats["avg_rating"], stats["unique_clients"], stats["returners"]
-            ])
+            rows.append(
+                [
+                    grp,
+                    stats["total_chats"],
+                    stats["total_msgs"],
+                    stats["avg_art"],
+                    stats["sla_compliance"],
+                    stats["avg_duration"],
+                    stats["avg_nps"],
+                    stats["real_nps"],
+                    stats["avg_rating"],
+                    stats["unique_clients"],
+                    stats["returners"],
+                ]
+            )
         return rows
 
-    def _build_departments_rows(self, data: List[ProcessedReportData]) -> List[List[Any]]:
+    def _build_departments_rows(
+        self, data: List[ProcessedReportData]
+    ) -> List[List[Any]]:
         dept_map: Dict[str, List[ProcessedReportData]] = {}
         for p in data:
-            if p.dept_label not in dept_map:
-                dept_map[p.dept_label] = []
-            dept_map[p.dept_label].append(p)
-            
+            group = constants.resolve_conversation_group(p.agent, p.dept_label)
+            if group not in dept_map:
+                dept_map[group] = []
+            dept_map[group].append(p)
+
         total_chats = len(data)
         rows = []
         for dept, p_list in dept_map.items():
             stats = self.aggregate_statistics(p_list)
-            rows.append([
-                dept, stats["total_chats"], 
-                f"{round(stats['total_chats']/total_chats*100, 2)}%" if total_chats else "0%",
-                stats["total_msgs"], stats["avg_art"], stats["sla_compliance"],
-                stats["avg_duration"], stats["avg_nps"], stats["real_nps"],
-                stats["avg_rating"], stats["unique_clients"], stats["returners"],
-                f"{stats['rating_coverage']}%"
-            ])
+            rows.append(
+                [
+                    dept,
+                    stats["total_chats"],
+                    f"{round(stats['total_chats'] / total_chats * 100, 2)}%"
+                    if total_chats
+                    else "0%",
+                    stats["total_msgs"],
+                    stats["avg_art"],
+                    stats["sla_compliance"],
+                    stats["avg_duration"],
+                    stats["avg_nps"],
+                    stats["real_nps"],
+                    stats["avg_rating"],
+                    stats["unique_clients"],
+                    stats["returners"],
+                    f"{stats['rating_coverage']}%",
+                ]
+            )
         return rows
